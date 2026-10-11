@@ -1568,10 +1568,14 @@ async function loadBilling(sync) {
 const cookie = name => (document.cookie.match('(?:^|; )' + name + '=([^;]*)') || [])[1];
 // _fbc: the click on an ad (fbclid in the address), kept 90 days. Created here too, not only by the pixel, because the
 // pixel loads later and the address may change before that; without it Meta can't tie the visit to the ad.
+// It goes on the whole domain (.temploninja.com), like the pixel's own, so there is one _fbc: two of them (the old
+// www-only one and the pixel's) can disagree, and the server would then send Meta a click that is not the last one.
+const fbcDomain = /(^|\.)temploninja\.com$/.test(location.hostname) ? ';domain=.temploninja.com' : '';
 (() => {
+  if (fbcDomain) document.cookie = '_fbc=;max-age=0;path=/'; // the www-only copy older versions left behind
   const click = new URLSearchParams(location.search).get('fbclid');
   if (click && /^[\w.-]{1,500}$/.test(click) && !(cookie('_fbc') || '').endsWith('.' + click))
-    document.cookie = `_fbc=fb.1.${Date.now()}.${click};max-age=7776000;path=/;SameSite=Lax`;
+    document.cookie = `_fbc=fb.1.${Date.now()}.${click};max-age=7776000;path=/${fbcDomain};SameSite=Lax`;
 })();
 // _gcl_aw: the click on a Google ad (gclid), kept 90 days in the cookie Google's tag reads, for the same reason.
 (() => {
@@ -1619,7 +1623,8 @@ function startGoogleTag(cfg) {
 function gadsConversion(event, params, id) {
   const label = gads?.labels[GADS[event]];
   if (!label) return;
-  gtag('event', 'conversion', { send_to: gads.id + '/' + label, ...(params?.value != null ? { value: params.value, currency: params.currency } : {}), ...(id ? { transaction_id: id } : {}) });
+  // ViewContent carries the price for Meta (its ad sets optimize for it) but stays without value in Google Ads.
+  gtag('event', 'conversion', { send_to: gads.id + '/' + label, ...(params?.value != null && event !== 'ViewContent' ? { value: params.value, currency: params.currency } : {}), ...(id ? { transaction_id: id } : {}) });
 }
 const track = (event, params, eventID) => { gadsConversion(event, params, eventID); if (pixelOn) fbq('track', event, params || {}, eventID ? { eventID } : undefined); };
 const trackCustom = (event, params) => { gadsConversion(event, params); if (pixelOn) fbq('trackCustom', event, params || {}); };
@@ -1672,7 +1677,7 @@ function practiceInfo(ninja) {
 function showPlan(reason) {
   planFrom = reason;
   tn.capture('pricing_viewed', { reason, payments_on: billing.enabled, premium: billing.premium, logged_in: !!auth.name, used_today: usedToday() });
-  if (!billing.premium) trackBoth('ViewContent', { content_name: 'Templo Ninja · precios', content_category: reason }, { reason });
+  if (!billing.premium) trackBoth('ViewContent', { content_name: 'Templo Ninja · precios', content_category: reason, value: billing.amount, currency: billing.currency }, { reason });
   // Also opened from the header CTA: without payments configured, or with the plan already active, it only informs.
   const canBuy = billing.enabled && !billing.premium;
   const offer = freeAccountOffer(), outOfGuest = offer && reason === 'limit';

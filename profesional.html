@@ -199,8 +199,10 @@ document.querySelectorAll('[data-cta]').forEach(a => a.addEventListener('click',
 (async () => {
   const cookie = name => (document.cookie.match('(?:^|; )' + name + '=([^;]*)') || [])[1];
   const click = new URLSearchParams(location.search).get('fbclid');
+  const fbcDomain = /(^|\.)temploninja\.com$/.test(location.hostname) ? ';domain=.temploninja.com' : ''; // one _fbc, as in app.js
+  if (fbcDomain) document.cookie = '_fbc=;max-age=0;path=/';
   if (click && /^[\w.-]{1,500}$/.test(click) && !(cookie('_fbc') || '').endsWith('.' + click))
-    document.cookie = `_fbc=fb.1.${Date.now()}.${click};max-age=7776000;path=/;SameSite=Lax`;
+    document.cookie = `_fbc=fb.1.${Date.now()}.${click};max-age=7776000;path=/${fbcDomain};SameSite=Lax`;
   let anon; try { anon = localStorage.getItem('teclado-ciego-anon'); } catch {}
   if (!/^[\w-]{8,64}$/.test(anon || '')) { anon = crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2, 12); try { localStorage.setItem('teclado-ciego-anon', anon); } catch {} }
   const gclid = new URLSearchParams(location.search).get('gclid'); // Google's ad click, kept like _fbc (index.html)

@@ -3,9 +3,10 @@
 // registration and the checkout are reported by auth.js and billing.js, and the purchase by the payment itself.
 const { redis, HttpError, bearer, tokenKey, body, handler } = require('./_lib');
 const { clientContext, saveContext, sendEvent, cleanEventId } = require('./_meta');
+const { settings } = require('./_billing');
 
 const EVENTS = {
-  ViewContent: data => ({ content_name: 'Templo Ninja · precios', content_category: data.reason === 'limit' ? 'limit' : 'upgrade' }),
+  ViewContent: data => ({ content_name: 'Templo Ninja · precios', content_category: data.reason === 'limit' ? 'limit' : 'upgrade', value: settings().price, currency: settings().currency }),
 };
 
 module.exports = handler(async req => {

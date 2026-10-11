@@ -97,11 +97,11 @@ La app carga el Píxel de Meta **Templo Ninja Web** (`2167285730522630`, el ID l
 | `PageView` | Al abrir la app. |
 | `CompleteRegistration` | Al crear una cuenta. |
 | `Practica` (personalizado) | Al empezar una práctica (primera tecla o primera respuesta), con `seccion`: `teclado-ciego` o `ninja-mental`, y `desafio` si es el de 5 minutos. |
-| `ViewContent` | Al ver los precios (ventana del plan), con `content_category`: `limit` si se le terminaron las prácticas gratis del día o `upgrade` si tocó el botón del aporte. No se manda a quien ya tiene acceso ilimitado. |
+| `ViewContent` | Al ver los precios (ventana del plan), con `content_category`: `limit` si se le terminaron las prácticas gratis del día o `upgrade` si tocó el botón del aporte, y el precio (`value`, `currency: 'ARS'`), porque los conjuntos de Meta optimizan por este evento. No se manda a quien ya tiene acceso ilimitado. |
 | `InitiateCheckout` | Al ir a pagar el aporte, con el precio. |
 | `Purchase` | Al volver de Mercado Pago con el pago aprobado (una vez por navegador). |
 
-El píxel se inicia con `external_id`: un id anónimo de ese navegador (`teclado-ciego-anon` en `localStorage`), cifrado con SHA-256. Si la visita viene de un anuncio (`fbclid` en la dirección), la página crea la cookie `_fbc` apenas abre, sin esperar al píxel.
+El píxel se inicia con `external_id`: un id anónimo de ese navegador (`teclado-ciego-anon` en `localStorage`), cifrado con SHA-256. Si la visita viene de un anuncio (`fbclid` en la dirección), la página crea la cookie `_fbc` apenas abre, sin esperar al píxel, en todo el dominio (`.temploninja.com`) como la del píxel: así hay una sola `_fbc` y el servidor manda siempre el último clic (antes quedaba una copia solo de `www` que podía no coincidir).
 
 **API de conversiones.** Con `META_CAPI_TOKEN` (token de la API de conversiones, en el Administrador de eventos → el píxel → Configuración), el servidor también manda los eventos que importan para las campañas, cada uno con el mismo `event_id` que el navegador, así Meta lo cuenta una sola vez (*Navegador y servidor · deduplicado*):
 
@@ -122,7 +122,7 @@ La app y `/profesional` cargan la etiqueta de Google (`gtag.js`) de la cuenta de
 
 | Evento de Meta | Conversión de Google Ads | Rol en la campaña |
 | --- | --- | --- |
-| `ViewContent` | TN - Vio precios (`precios`) | **Principal**: la campaña optimiza por esta, como el conjunto activo de Meta ("Vieron precios"). |
+| `ViewContent` | TN - Vio precios (`precios`) | **Principal**: la campaña optimiza por esta, como el conjunto activo de Meta ("Vieron precios"). Va sin valor: el precio que lleva para Meta no se suma al valor de conversión de Google. |
 | `CompleteRegistration` | TN - Cuenta creada (`registro`) | Secundaria (se mide, no guía la puja). |
 | `Practica` | TN - Práctica (`practica`) | Secundaria. |
 | `InitiateCheckout` | TN - Inició pago (`pago`) | Secundaria, con el precio. |
