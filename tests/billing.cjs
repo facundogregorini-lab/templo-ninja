@@ -20,8 +20,8 @@ const fakeMP = http.createServer(async (req, res) => {
   if (req.headers.authorization !== 'Bearer TEST-token') { res.statusCode = 401; return send({ message: 'bad token' }); }
   if (req.method === 'POST' && url.pathname === '/checkout/preferences') {
     const body = JSON.parse(raw), id = 'pay_' + (payments.size + 1);
-    prices.push(body.items[0].unit_price); // 4.900, or 9.900 for an account whose 24-hour offer ended
-    assert.ok([4900, 9900].includes(body.items[0].unit_price)); assert.equal(body.items[0].quantity, 1);
+    prices.push(body.items[0].unit_price);
+    assert.equal(body.items[0].unit_price, 4900); assert.equal(body.items[0].quantity, 1);
     assert.ok(!body.auto_recurring && body.notification_url.endsWith('/api/mercadopago'));
     payments.set(id, { id, status: 'approved', transaction_amount: body.items[0].unit_price, currency_id: 'ARS', external_reference: body.external_reference, metadata: body.metadata,
       transaction_details: { net_received_amount: 4530.5 }, fee_details: [{ type: 'mercadopago_fee', amount: 369.5 }], payment_method_id: 'account_money', payment_type_id: 'account_money', installments: 1 });
@@ -122,34 +122,11 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('The interview training uses the same daily limit', await guest.isVisible('#planDlg') && await guest.isHidden('#quiz'));
     await guest.click('#planClose');
 
-    // Experiment iq-desafio-directo: visitors from the "iq" ad, split by a PostHog flag
-    const iqTestPage = await open('/?utm_content=iq#ninja', { 'iq-desafio-directo': 'test' });
-    await iqTestPage.waitForFunction(() => document.querySelector('#cogContinue').textContent.includes('IQ ninja'));
-    check('Experiment (test): the main Ninja mental button is the IQ challenge', (await iqTestPage.textContent('#cogContinue')).includes('desafío de 5 min'));
-    check('Experiment: an automatic load (nobody touches the page) is not activated', events(iqTestPage, 'iq_exp_activated').length === 0);
-    await iqTestPage.click('#cogContinue');
-    check('Experiment: the first real tap activates the visitor, once, with the variant', events(iqTestPage, 'iq_exp_activated').length === 1
-      && events(iqTestPage, 'iq_exp_activated')[0].variant === 'test' && events(iqTestPage, 'iq_exp_activated')[0]['$feature/iq-desafio-directo'] === 'test');
-    check('Experiment (test): it opens the 5-minute challenge', await iqTestPage.isVisible('#qIntro'));
-    await iqTestPage.click('#qGo'); await iqTestPage.waitForSelector('#qPlay:not([hidden])');
-    await iqTestPage.keyboard.press('1'); await iqTestPage.waitForTimeout(300); await iqTestPage.click('#qEnd');
-    await iqTestPage.waitForSelector('#iqOffer');
-    check('Experiment (test): the result shows the IQ and, under it, the unlimited plan without subscription', (await iqTestPage.textContent('#qResult')).includes('IQ ')
-      && (await iqTestPage.textContent('#iqOffer')).includes('$ 4.900, pago único, sin suscripción') && events(iqTestPage, 'iq_offer_viewed').length === 1);
-    await iqTestPage.click('#iqOfferBtn');
-    check('Experiment (test): the offer opens the plan, explained and measured as iq_result', await iqTestPage.isVisible('#planDlg')
-      && (await iqTestPage.textContent('#planReason')).includes('Tu IQ ninja sube') && events(iqTestPage, 'pricing_viewed').some(e => e.reason === 'iq_result'));
-    await iqTestPage.click('#planClose');
-    check('Experiment: later taps do not activate again', events(iqTestPage, 'iq_exp_activated').length === 1);
-    const iqControl = await open('/?utm_content=iq#ninja', { 'iq-desafio-directo': 'control' });
-    await iqControl.waitForTimeout(300);
-    check('Experiment (control): Ninja mental stays as it was', (await iqControl.textContent('#cogContinue')).includes('sesión 1'));
-    await iqControl.mouse.click(5, 300); await iqControl.waitForTimeout(100);
-    check('Experiment (control): a real tap activates the visitor as control', events(iqControl, 'iq_exp_activated').map(e => e.variant).join() === 'control');
-    const notInExp = await open('/#ninja', { 'iq-desafio-directo': 'test' });
-    await notInExp.waitForTimeout(300);
-    await notInExp.mouse.click(5, 300); await notInExp.waitForTimeout(100);
-    check('Experiment: visitors who did not come from the iq ad are not in it', (await notInExp.textContent('#cogContinue')).includes('sesión 1') && events(notInExp, 'iq_exp_activated').length === 0);
+    // The experiment iq-desafio-directo ended keeping the original: visitors from the "iq" ad see Ninja mental as always
+    const iqPage = await open('/?utm_content=iq#ninja', { 'iq-desafio-directo': 'test' });
+    await iqPage.waitForTimeout(300);
+    await iqPage.mouse.click(5, 300); await iqPage.waitForTimeout(100);
+    check('IQ experiment ended: Ninja mental stays as it was, nothing activated', (await iqPage.textContent('#cogContinue')).includes('sesión 1') && events(iqPage, 'iq_exp_activated').length === 0);
 
     // /profesional is where the professional ads land: it starts the pixel too, with the same ids as the app
     const proCtx = await browser.newContext();
@@ -285,47 +262,16 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await phonePage.reload(); await phonePage.waitForSelector('#acctBtn .nm'); await phonePage.waitForSelector('#planNote:not([hidden])'); await phonePage.evaluate(() => document.querySelector('#upgradeCta').click());
     await phonePage.waitForSelector('#planDlg[open]');
     check('On a phone there is no "pay from the phone" option', await phonePage.isVisible('#planSubmit') && await phonePage.isHidden('#planPhone'));
-    // Pricing experiment "precio-oferta-24h": control keeps the plan as it was
-    const ctl = await open('', { 'precio-oferta-24h': 'control' }); await register(ctl, 'ctl');
-    await ctl.click('#upgradeCta'); await ctl.waitForTimeout(300);
-    check('Control: no offer, the usual price', await ctl.isHidden('#planOffer') && (await ctl.textContent('#planPrice')).includes('4.900')
-      && events(ctl, 'price_offer_seen').some(e => e.variant === 'control' && e.active === null));
-    // Test: a guest sees the 24-hour offer, and the countdown is the same when they come back
-    const off = await open('', { 'precio-oferta-24h': 'test' });
-    await off.evaluate(() => document.querySelector('#upgradeCta').click()); await off.waitForSelector('#planOffer:not([hidden])');
-    const cd = async p => Number(await p.textContent('#cdH')) * 3600 + Number(await p.textContent('#cdM')) * 60 + Number(await p.textContent('#cdS'));
-    check('Test: the regular price struck through, the saving and the 24-hour countdown', (await off.textContent('#offerOld')).includes('9.900') && (await off.textContent('#offerSave')).includes('5.000')
-      && (await off.textContent('#offerNew')).includes('4.900') && await cd(off) > 23.9 * 3600 && await off.isHidden('#planPrice')
-      && events(off, 'price_offer_seen').some(e => e.variant === 'test' && e.active && e.minutes_left >= 1439 && !e.logged_in));
-    // Two hours already gone (as if they had first seen it then): the countdown keeps going from there
-    await off.evaluate(() => localStorage.setItem('tn-oferta-24h', String(Date.now() - 2 * 36e5)));
-    await off.reload(); await off.waitForSelector('#planNote:not([hidden])');
-    await off.evaluate(() => document.querySelector('#upgradeCta').click()); await off.waitForSelector('#planOffer:not([hidden])');
-    const left = await cd(off);
-    check('Coming back, the countdown keeps going (not a new 24 hours)', left < 22 * 3600 + 5 && left > 21.9 * 3600);
-    await off.click('#planClose'); await register(off, 'oferta');
-    const offToken = await off.evaluate(() => localStorage.getItem('teclado-ciego-token'));
-    let offPlan = await planOf(offToken);
-    check('Signing in, the account keeps the guest\'s offer and its end', offPlan.offer?.variant === 'test' && offPlan.offer.active && Math.abs(offPlan.offer.endsAt - (Date.now() + left * 1000)) < 60e3 && offPlan.amount === 4900);
-    await off.click('#upgradeCta'); await off.waitForSelector('#planOffer:not([hidden])');
-    check('…and the page shows the same countdown', Math.abs(await cd(off) - left) < 30);
+    // The pricing experiment "precio-oferta-24h" ended: even with the old flag, everyone sees and pays $4.900
+    const ended = await open('', { 'precio-oferta-24h': 'test' }); await register(ended, 'fin');
+    await ended.click('#upgradeCta'); await ended.waitForTimeout(300);
+    const endedToken = await ended.evaluate(() => localStorage.getItem('teclado-ciego-token'));
     const bill = (token, payload) => fetch(SITE + '/api/billing', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json());
-    await bill(offToken, { action: 'offer', variant: 'control' });
-    check('The first variant stored stays', (await planOf(offToken)).offer.variant === 'test');
-    await bill(offToken, { action: 'buy' });
-    check('Inside the 24 hours the account pays $4.900', prices.at(-1) === 4900);
-    // An account whose offer started more than 24 hours ago pays the regular price, whatever the page says
-    const late = await open('', { 'precio-oferta-24h': 'test' });
-    await late.evaluate(() => localStorage.setItem('tn-oferta-24h', String(Date.now() - 25 * 36e5)));
-    await register(late, 'tarde');
-    await late.click('#upgradeCta'); await late.waitForTimeout(300);
-    const lateToken = await late.evaluate(() => localStorage.getItem('teclado-ciego-token'));
-    const latePlan = await planOf(lateToken);
-    check('After the 24 hours: no countdown, the regular price', await late.isHidden('#planOffer') && (await late.textContent('#planPrice')).includes('9.900') && latePlan.amount === 9900 && !latePlan.offer.active);
-    await bill(lateToken, { action: 'buy' });
-    check('…and Mercado Pago charges $9.900', prices.at(-1) === 9900);
-    const forged = await bill(lateToken, { action: 'offer', variant: 'test', start: Date.now() });
-    check('A new start cannot restart the offer', forged.amount === 9900);
+    const stale = await bill(endedToken, { action: 'offer', variant: 'test', start: Date.now() - 25 * 36e5 }); // an old page may still send it
+    check('Pricing experiment ended: no offer, the usual price', await ended.isHidden('#planOffer') && (await ended.textContent('#planPrice')).includes('4.900')
+      && stale.amount === 4900 && stale.offer === null && events(ended, 'price_offer_seen').length === 0);
+    await bill(endedToken, { action: 'buy' });
+    check('…and Mercado Pago charges $4.900', prices.at(-1) === 4900);
     const gift = await open(); await register(gift, 'regalo');
     await gift.waitForFunction(() => document.querySelector('#planNote').hidden);
     check('Courtesy users are unlimited', true);
