@@ -32,7 +32,7 @@ window.Desafios = (() => {
     if (!r.ok) throw Object.assign(new Error(data.error || 'No se pudo conectar.'), { status: r.status });
     return data;
   }
-  const battleUrl = id => `${location.origin}${location.pathname}?batalla=${id}`;
+  const battleUrl = id => `${location.origin}/nueva?batalla=${id}`; // battles live in /nueva: "/" may show the current home (A/B test)
   const escape = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
   const GAMES = {

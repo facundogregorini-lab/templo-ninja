@@ -41,4 +41,27 @@
       window.posthog.onFeatureFlags(() => done(window.posthog.getFeatureFlag(key)));
     },
   };
+
+  /* A/B test of the home (middleware.js): the variant this browser got at "/" is in the tn_home cookie. Every event
+     carries it (home_ab), and PostHog's experiment "home-nueva" counts an exposure, home_ab_exposure, each time "/"
+     is actually on screen: Instagram and Facebook preload the ad's page in the background, and that is nobody.
+     Visits picked by hand with ?home= (tn_home_qa) stay out. The flag mirrors the cookie (person property home_ab),
+     so PostHog's own reading of it agrees. */
+  const cookie = name => (document.cookie.match('(?:^|; )' + name + '=([^;]*)') || [])[1];
+  const home = cookie('tn_home'), qa = cookie('tn_home_qa') === '1';
+  const variant = home === 'nueva' ? 'test' : home === 'actual' ? 'control' : null;
+  if (!variant) return;
+  if (!local) {
+    window.posthog.register(qa ? { home_ab_qa: true } : { home_ab: home });
+    if (!qa) window.posthog.setPersonPropertiesForFlags({ home_ab: home });
+  }
+  if (qa || location.pathname !== '/') return;
+  let exposed = false;
+  const expose = () => {
+    if (exposed || document.visibilityState !== 'visible') return;
+    exposed = true; document.removeEventListener('visibilitychange', expose);
+    window.tn.capture('home_ab_exposure', { variant, home, '$feature/home-nueva': variant });
+  };
+  document.addEventListener('visibilitychange', expose);
+  expose();
 })();
