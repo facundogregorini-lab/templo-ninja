@@ -27,12 +27,23 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Page IDs are unique', await p.evaluate(() => { const ids = [...document.querySelectorAll('[id]')].map(e => e.id); return new Set(ids).size === ids.length; }));
     check('Home shows the two entries and live rankings, with focused screens hidden', await visible(p, '#heroTitle') && await visible(p, '#continue') && await visible(p, '#homeTypingRank') && !(await visible(p, '#path')) && !(await visible(p, '#cogPath')));
     check('Challenges are inside Mente and Dojo inside Profile', await p.evaluate(() => !!document.querySelector('[data-view-of=mente] [data-view-of=desafios]') && !!document.querySelector('[data-profile-panel=dojo] #midojo') && !document.querySelector('.nv-links [data-go=dojo]')));
+    const btns = sel => p.$$eval(sel, bs => bs.map(b => b.textContent.trim()).join(' | '));
+    check('Inicio: Teclado offers Entrenar, Ver más and Medir velocidad', (await btns('#sections .nv-door:nth-child(1) .nv-ctas .btn')) === 'Entrenar | Ver más | Medir velocidad');
+    check('…and Mente offers Entrenar, Desafío IQ, Desafío relámpago and Entrenar tests de empresas', (await btns('#sections .nv-door:nth-child(2) .nv-ctas .btn')) === 'Entrenar | Desafío IQ | Desafío relámpago | Entrenar tests de empresas' && (await p.getAttribute('#nvMentalCo', 'href')) === '/profesional');
+    check('"Todos" has a box for every test, the lightning ones included', (await btns('.nv-all .nv-game b')) === 'Ninja del teclado | Figuras abstractas | Razonamiento numérico | Inglés para el trabajo | Lógica y series | Simulacro de entrevista | Desafío IQ ninja | Test del chimpancé | Memoria de números | Memoria visual | Reflejos | Tests de empresas' && !(await p.$('.nv-lightning-link')));
+    check('Apoyá el templo is a button in the header', await visible(p, '.nv-top #upgradeCta') && (await p.textContent('#upgradeCta')).includes('Apoyá'));
+    await p.click('#nvTkMore');
+    check('Ver más opens the training of Teclado, like Entrenar', await onScreen(p, 'teclado') && await visible(p, '#path') && (await events(p, 'home_cta')).some(e => e.cta === 'teclado_ver_mas'));
+    await p.click('[data-go="inicio"]'); await p.click('#nvMentalIq');
+    check('Desafío IQ opens its tab in Mente', await onScreen(p, 'mente') && await visible(p, '#maxBtn'));
+    await p.click('[data-go="inicio"]'); await p.click('.nv-all [data-all="num"]');
+    check('A box of a Ninja mental track opens that track', await onScreen(p, 'mente') && (await p.getAttribute('#cogTracks [data-v="num"]', 'aria-pressed')) === 'true' && (await events(p, 'home_all_tile')).some(e => e.tile === 'num'));
+    await p.click('#cogTracks [data-v="fig"]');
+    await p.click('[data-go="inicio"]');
     await p.click('#continue');
-    check('"Seguí acá" points to the first lesson, out of the 26 of the course', (await p.textContent('#tkNextTitle')).includes('Lección 1') && (await p.textContent('#tkCount')) === '0 de 6 en esta etapa' && (await p.$$('#tkKeys kbd')).length === 2);
-    check('Before graduating, the belts are one discreet line', await visible(p, '#path .belts-teaser') && !(await visible(p, '#path .group.belt')) && !(await visible(p, '#tkBeltsBox')));
-    await p.click('#path .belts-teaser button');
-    check('…that shows them on purpose', await visible(p, '#path .group.belt[data-belt="amarillo"]') && (await events(p, 'belts_preview')).some(e => e.shown));
-    await p.click('#path .belts-teaser button');
+    check('"Seguí acá" points to the first lesson, in the white belt', (await p.textContent('#tkNextTitle')).includes('Lección 1') && (await p.textContent('#tkNextEyebrow')).includes('Cinturón blanco') && (await p.textContent('#tkCount')) === '0 de 6 en este cinturón' && (await p.$$('#tkKeys kbd')).length === 2);
+    check('Teclado is seven belts with the 66 lessons, like Ninja mental', (await p.$$eval('#path > .group.tn-belt', gs => gs.map(g => g.dataset.belt).join())) === 'blanco,amarillo,naranja,verde,azul,marron,negro' && (await p.$$('#path .lc')).length === 66 && !(await visible(p, '#tkBeltsBox')) && (await p.textContent('#learningTitle')).includes('7 cinturones'));
+    check('The belt in progress is open and the others are one line', !(await p.getAttribute('#path [data-belt="blanco"]', 'class')).includes('nv-folded') && (await p.getAttribute('#path [data-belt="amarillo"]', 'class')).includes('nv-folded') && (await p.textContent('#path [data-belt="verde"]')).includes('8 lecciones'));
     await p.click('.nv-links [data-go="teclado"]');
     check('The header takes you to a section and says where you are', await onScreen(p, 'teclado') && p.url().endsWith('/nueva#teclado') && await current(p) === 'teclado' && (await events(p, 'nav_section')).some(e => e.section === 'teclado'));
     await p.click('[data-view-of="teclado"] [role="tab"][data-sub="medir"]');
@@ -112,7 +123,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     const g = await open('/nueva#desafios');
     check('The challenges section lists the four quick challenges', (await g.$$('[data-view-of="desafios"] .nv-game[data-game]')).length === 4);
     // Chimp test: the first round right, then three mistakes
-    await g.click('.nv-game[data-game="chimpance"]');
+    await g.click('#desafios .nv-game[data-game="chimpance"]');
     check('A challenge opens its own screen, without the tab bar', await g.isVisible('#game') && !(await g.isVisible('#home')) && g.url().endsWith('#juego-chimpance'));
     await g.click('#gameGo');
     for (let n = 1; n <= 4; n++) await g.click(`.gm-cell[data-n="${n}"]`);
@@ -122,10 +133,10 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await g.waitForSelector('.gm-result');
     check('Three mistakes end it with the score and the chimp to beat', (await g.textContent('.gm-score')).trim().startsWith('4') && (await g.textContent('.gm-compare')).includes('Ayumu') && (await events(g, 'game_completed')).some(e => e.game === 'chimpance' && e.score === 4));
     await g.click('#gameOut');
-    check('Leaving goes back to the challenges, with the best score on the tile', await onScreen(g, 'desafios') && (await g.textContent('.nv-game[data-game="chimpance"]')).includes('Tu mejor: 4'));
+    check('Leaving goes back to the challenges, with the best score on the tile', await onScreen(g, 'desafios') && (await g.textContent('#desafios .nv-game[data-game="chimpance"]')).includes('Tu mejor: 4'));
     // Number memory: one right, one wrong
     await g.evaluate(() => { Math.random = () => 0; });
-    await g.click('.nv-game[data-game="numeros"]'); await g.click('#gameGo');
+    await g.click('#desafios .nv-game[data-game="numeros"]'); await g.click('#gameGo');
     check('The number shows first', (await g.textContent('.gm-digits')) === '100');
     await g.waitForSelector('#gmNumIn'); await g.fill('#gmNumIn', '100'); await g.press('#gmNumIn', 'Enter');
     check('Typing it right says so', (await g.textContent('.gm-check')).includes('Bien'));
@@ -133,7 +144,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await g.click('#gmNumNext');
     check('A mistake ends it: the score is the longest number remembered', (await g.textContent('.gm-score')).trim().startsWith('3'));
     // Reaction time: too early, then five tries (with the shortest waits)
-    await g.click('#gameOut'); await g.click('.nv-game[data-game="reflejos"]'); await g.click('#gameGo');
+    await g.click('#gameOut'); await g.click('#desafios .nv-game[data-game="reflejos"]'); await g.click('#gameGo');
     await g.click('.gm-react');
     check('Tapping before green does not count', (await g.textContent('.gm-react')).includes('Muy pronto'));
     await g.click('.gm-react');
@@ -142,7 +153,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Five tries give the average in milliseconds', /\d+/.test(await g.textContent('.gm-score')) && (await g.textContent('.gm-score')).includes('ms'));
     // Visual memory: clicking the lit squares passes the level
     await g.evaluate(() => { Math.random = (() => { let x = 7; return () => (x = (x * 9301 + 49297) % 233280) / 233280; })(); }); // varied, but repeatable
-    await g.click('#gameOut'); await g.click('.nv-game[data-game="visual"]'); await g.click('#gameGo');
+    await g.click('#gameOut'); await g.click('#desafios .nv-game[data-game="visual"]'); await g.click('#gameGo');
     const lit = await g.$$eval('.gm-sq.lit', els => els.map(e => [...e.parentNode.children].indexOf(e)));
     await g.waitForFunction(() => !document.querySelector('.gm-vis.show'));
     for (const i of lit) await g.click(`.gm-sq:nth-child(${i + 1})`);
@@ -161,13 +172,13 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     };
     const A = await open('/nueva#dojo');
     check('Mi dojo: a guest ninja, its level and the next reachable goal', await onScreen(A, 'dojo') && (await A.textContent('#mdName')) === 'Ninja invitado' && (await A.textContent('#mdGoal')).includes('Medir tu velocidad') && (await A.textContent('#mdBlock')).includes('Bloque actual'));
-    check('Entrenamiento shows the current block, not all the lessons', (await A.textContent('#mdNextTitle')).includes('Lección 1') && (await A.textContent('#mdCount')).includes('del bloque') && await visible(A, '#mdContinue'));
+    check('Entrenamiento shows the current block, not all the lessons', (await A.textContent('#mdNextTitle')).includes('Lección 1') && (await A.textContent('#mdCount')).includes('de este cinturón') && (await A.textContent('#mdLevel')).includes('Cinturón blanco') && await visible(A, '#mdContinue'));
     await A.click('[data-view-of="dojo"] [role="tab"][data-sub="batallas"]');
     await A.waitForSelector('.nv-bempty');
     check('Without battles: the first one starts with a mark', (await A.textContent('.nv-bempty')).includes('Tu primera batalla empieza con una marca') && (await A.textContent('#mdFirstBattle')) === 'Jugar y desafiar' && !(await visible(A, '#mdNewBattle')));
     await A.click('#mdFirstBattle');
     check('…which takes you to the quick challenges', await onScreen(A, 'desafios'));
-    await A.click('.nv-game[data-game="chimpance"]'); await A.click('#gameGo'); await chimp(A, 1);
+    await A.click('#desafios .nv-game[data-game="chimpance"]'); await A.click('#gameGo'); await chimp(A, 1);
     check('The result asks for a friend who can beat you, and offers beating your mark', (await A.textContent('.gm-dare')).includes('¿Tenés un amigo que pueda superarte?') && (await A.textContent('#gameAgain')) === 'Superar mi marca');
     await A.click('#gameDare');
     check('Challenging asks once for the name the friend sees', await visible(A, '#gmNickIn'));
@@ -219,6 +230,8 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Anyone with the link sees names and scores only', viewed.battles[0].from === 'Facu' && viewed.battles[0].responses[0].name === 'Ana' && viewed.battles[0].responses[0].result === 'won' && !('user' in viewed.battles[0]));
     const mp = await open('/nueva', phone);
     check('On the phone, the four-tab bar opens Profile, with Dojo inside', await mp.isVisible('.nv-tabbar [data-go="dojo"]') && (await mp.textContent('.nv-tabbar [data-go="dojo"]')).includes('Perfil') && await mp.locator('.nv-tabbar a').count() === 4);
+    check('On the phone, Apoyá el templo stays in the header next to Perfil, without overflowing', await mp.isVisible('.nv-top #upgradeCta') && await mp.isVisible('.nv-top .nv-profile-link') && await mp.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.nv-top .nv-profile-link').getBoundingClientRect().right <= innerWidth));
+    check('On the phone, "Todos" is a grid of two columns', await mp.evaluate(() => getComputedStyle(document.querySelector('.nv-all .nv-games')).gridTemplateColumns.split(' ').length === 2));
 
     // Progress checks of the course: starting point, control at lesson 6, summary at 10, blocks, final measurement
     const BASE_IDS = ['fj','dk','sl','añ','gh','rep1','ei','ru','ty','wo','qp','rep2','nm','vb','c,','x.','z','rep3','may','til','ref','cos','ofi','tec','coc','via'];
@@ -296,14 +309,14 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     // The invitation: after an activity or on coming back, and "Ahora no" respected
     const nv = await open('/nueva#desafios', iphone);
     check('No invitation on the first visit before doing anything', !(await nv.isVisible('#nvNudge')));
-    await nv.tap('.nv-game[data-game="chimpance"]'); await nv.tap('#gameGo');
+    await nv.tap('#desafios .nv-game[data-game="chimpance"]'); await nv.tap('#gameGo');
     for (let i = 0; i < 3; i++) { await nv.waitForSelector('.gm-cell[data-n="2"]:not(.done):not(.wrong)'); await nv.tap('.gm-cell[data-n="2"]'); await nv.waitForTimeout(750); }
     await nv.waitForSelector('.gm-result'); await nv.tap('#gameOut');
     check('After finishing a challenge: the invitation to add it', await nv.isVisible('#nvNudge') && (await events(nv, 'pwa_nudge_shown')).some(e => e.reason === 'activity'));
     await nv.tap('#nvNudgeNo');
     check('"Ahora no" hides it', !(await nv.isVisible('#nvNudge')));
     await nv.reload(); await nv.waitForLoadState('networkidle');
-    await nv.tap('.nv-game[data-game="chimpance"]'); await nv.tap('#gameGo');
+    await nv.tap('#desafios .nv-game[data-game="chimpance"]'); await nv.tap('#gameGo');
     for (let i = 0; i < 3; i++) { await nv.waitForSelector('.gm-cell[data-n="2"]:not(.done):not(.wrong)'); await nv.tap('.gm-cell[data-n="2"]'); await nv.waitForTimeout(750); }
     await nv.waitForSelector('.gm-result'); await nv.tap('#gameOut');
     check('…and keeps it quiet for seven days', !(await nv.isVisible('#nvNudge')));
@@ -313,45 +326,42 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await ret.tap('#nvNudgeYes');
     check('…whose button opens the steps', await ret.isVisible('#nvInstallDlg'));
 
-    // Belts: after the 26 lessons of the base course
+    // Belts: the 26 lessons of the base course are the first four of the seven; belts.js's five follow, two by two
     const BASE = ['fj','dk','sl','añ','gh','rep1','ei','ru','ty','wo','qp','rep2','nm','vb','c,','x.','z','rep3','may','til','ref','cos','ofi','tec','coc','via'];
     const graduate = async (ctx, extra = {}) => ctx.addInitScript(([ids, extra]) => { localStorage.setItem('teclado-ciego-v1', JSON.stringify({ lessons: Object.fromEntries([...ids.map(id => [id, { stars: 2, ppm: 30, acc: 96 }]), ...Object.entries(extra)]) })); }, [BASE, extra]);
     const bctx = await browser.newContext(); await graduate(bctx);
     const bp = await bctx.newPage(); bp.on('pageerror', e => errors.push(e.message));
     await bp.goto(SITE + '/nueva#teclado'); await bp.waitForLoadState('networkidle');
-    check('After the base course, "Seguí acá" goes on with the yellow belt', (await bp.textContent('#tkNextEyebrow')).includes('Cinturón amarillo') && (await bp.textContent('#tkNextTitle')) === 'Lección 1: Comas' && (await bp.textContent('#tkCount')) === '0 de 8');
-    check('The belt row marks the base course done and the yellow belt as current', await bp.getAttribute('#tkBelts li:nth-child(1)', 'class') === 'done' && await bp.getAttribute('#tkBelts li:nth-child(2)', 'class') === 'current' && (await bp.$$('#tkBelts li')).length === 6);
-    check('Only the current belt shows its lessons (the base course hides)', await bp.isVisible('#path [data-belt="amarillo"]') && !(await bp.isVisible('#path [data-belt="naranja"]')) && !(await bp.isVisible('#path > .group:not(.belt)')));
-    await bp.click('#tkBelts li:nth-child(1)');
-    check('The white belt shows the base course again', await bp.isVisible('#path > .group:not(.belt)'));
+    check('After the base course, "Seguí acá" goes on with the blue belt', (await bp.textContent('#tkNextEyebrow')).includes('Cinturón azul') && (await bp.textContent('#tkNextTitle')) === 'Lección 27: Comas' && (await bp.textContent('#tkCount')) === '0 de 16 en este cinturón');
+    check('The blue belt opens and the ones done fold', !(await bp.getAttribute('#path [data-belt="azul"]', 'class')).includes('nv-folded') && (await bp.getAttribute('#path [data-belt="blanco"]', 'class')).includes('nv-folded') && (await bp.textContent('#path [data-belt="verde"]')).includes('¡Conseguido!'));
     await bp.click('#tkContinue');
-    check('A belt lesson opens with its belt and its own text', (await bp.textContent('#lGroup')).includes('Cinturón amarillo · lección 1 de 8') && (await bp.textContent('#inner')).includes(','));
-    await bp.evaluate(() => { const text = [...document.querySelectorAll('#inner .c')].map(s => s.textContent).join(''); for (const key of text) { const up = key !== key.toLowerCase(); document.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: up, bubbles: true, cancelable: true })); } });
+    check('A belt lesson opens with its belt and its own text', (await bp.textContent('#lGroup')).includes('Lección 27 · Cinturón azul') && (await bp.textContent('#inner')).includes(','));
+    await typeAll(bp);
     await bp.waitForSelector('#result:not([hidden])');
-    check('Passing it counts for the belt and offers the next lesson', (await bp.textContent('#result')).includes('Cinturón amarillo: 1 de 8') && (await bp.textContent('#rNext')).includes('Punto y mayúscula'));
+    check('Passing it counts for the belt and offers the next lesson', (await bp.textContent('#result')).includes('Cinturón azul: 1 de 16') && (await bp.textContent('#rNext')).includes('Punto y mayúscula'));
     await bp.click('#rHome');
-    check('…and "Seguí acá" moves on', (await bp.textContent('#tkNextTitle')) === 'Lección 2: Punto y mayúscula' && (await bp.textContent('#tkCount')) === '1 de 8');
-    // Graduation: the last of the 26 lessons
-    const gctx = await browser.newContext(); await gctx.addInitScript(ids => { localStorage.setItem('teclado-ciego-v1', JSON.stringify({ lessons: Object.fromEntries(ids.slice(0, -1).map(id => [id, { stars: 2, ppm: 30, acc: 96 }])) })); }, BASE);
+    check('…and "Seguí acá" moves on', (await bp.textContent('#tkNextTitle')) === 'Lección 28: Punto y mayúscula' && (await bp.textContent('#tkCount')) === '1 de 16 en este cinturón');
+    // The last of the 26 lessons wins the green belt
+    const gctx = await browser.newContext(); await gctx.addInitScript(() => { window.tnEvents = { push: e => (window.__ev = window.__ev || []).push(e) }; }); await gctx.addInitScript(ids => { localStorage.setItem('teclado-ciego-v1', JSON.stringify({ lessons: Object.fromEntries(ids.slice(0, -1).map(id => [id, { stars: 2, ppm: 30, acc: 96 }])) })); }, BASE);
     const gp = await gctx.newPage(); gp.on('pageerror', e => errors.push(e.message));
     await gp.goto(SITE + '/nueva#teclado'); await gp.waitForLoadState('networkidle');
-    check('One lesson to go: the count is about the course', (await gp.textContent('#tkCount')) === '5 de 6 en esta etapa');
+    check('One lesson to go: the count is about its belt', (await gp.textContent('#tkCount')) === '7 de 8 en este cinturón');
     await gp.click('#tkContinue');
-    await gp.evaluate(() => { const text = [...document.querySelectorAll('#inner .c')].map(s => s.textContent).join(''); for (const key of text) document.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: key !== key.toLowerCase(), bubbles: true, cancelable: true })); });
+    await typeAll(gp);
     await gp.waitForSelector('#result:not([hidden])');
-    check('Finishing the 26 lessons celebrates the course and proposes the next challenge', (await gp.textContent('#result')).includes('¡Terminaste el curso!') && (await gp.textContent('#result')).includes('medición final') && (await gp.textContent('#rNext')).includes('Comas'));
+    check('Finishing the 26 lessons wins the green belt and proposes the next one', (await gp.textContent('#result')).includes('¡Conseguiste el cinturón verde!') && (await gp.textContent('#result')).includes('cinturón azul') && (await gp.textContent('#rNext')).includes('Comas') && (await events(gp, 'course_completed')).length === 1);
     await gp.click('#rHome');
-    check('Then the belts show up', await gp.isVisible('#tkBeltsBox') && (await gp.textContent('#tkNextEyebrow')).includes('Cinturón amarillo'));
+    check('Then the blue belt is next', (await gp.textContent('#tkNextEyebrow')).includes('Cinturón azul') && !(await gp.isVisible('#tkBeltsBox')));
 
-    // The last lesson of a belt wins it
-    const wctx = await browser.newContext(); await graduate(wctx, Object.fromEntries(['b1a','b1b','b1c','b1d','b1e','b1f','b1g'].map(id => [id, { stars: 2, ppm: 30, acc: 96 }])));
+    // The last lesson of a belt wins it (the blue one: the old yellow and orange, 16 lessons)
+    const wctx = await browser.newContext(); await wctx.addInitScript(() => { window.tnEvents = { push: e => (window.__ev = window.__ev || []).push(e) }; }); await graduate(wctx, Object.fromEntries([...'abcdefgh'].map(c => 'b1' + c).concat([...'abcdefg'].map(c => 'b2' + c)).map(id => [id, { stars: 2, ppm: 30, acc: 96 }])));
     const wp = await wctx.newPage(); wp.on('pageerror', e => errors.push(e.message));
     await wp.goto(SITE + '/nueva#teclado'); await wp.waitForLoadState('networkidle'); await wp.click('#tkContinue');
-    await wp.evaluate(() => { const text = [...document.querySelectorAll('#inner .c')].map(s => s.textContent).join(''); for (const key of text) document.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: key !== key.toLowerCase(), bubbles: true, cancelable: true })); });
+    await typeAll(wp);
     await wp.waitForSelector('#result:not([hidden])');
-    check('Passing the last lesson of a belt wins it and points to the next one', (await wp.textContent('#result')).includes('¡Conseguiste el cinturón amarillo!') && (await wp.textContent('#result')).includes('cinturón naranja'));
+    check('Passing the last lesson of a belt wins it and points to the next one', (await wp.textContent('#result')).includes('¡Conseguiste el cinturón azul!') && (await wp.textContent('#result')).includes('cinturón marrón') && (await events(wp, 'typing_belt_won')).some(e => e.belt === 'azul'));
     await wp.click('#rHome');
-    check('The row shows the yellow belt done and the orange one current', await wp.getAttribute('#tkBelts li:nth-child(2)', 'class') === 'done' && await wp.getAttribute('#tkBelts li:nth-child(3)', 'class') === 'current' && await wp.isVisible('#path [data-belt="naranja"]'));
+    check('The brown belt opens next', !(await wp.getAttribute('#path [data-belt="marron"]', 'class')).includes('nv-folded') && (await wp.textContent('#tkNextEyebrow')).includes('Cinturón marrón'));
     const hb = await open('/');
     check('The current home lists the five belts after the base course', (await hb.$$('#path .group.belt')).length === 5 && (await hb.$$('#path .group.belt .lc')).length === 40);
 

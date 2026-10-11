@@ -88,6 +88,7 @@
   // the 26 lessons are done, progress always refers to the course; the belts are one line until graduation.
   function renderNext() {
     if (!window.tnApp) return;
+    if (tnApp.TN_BELTS) return renderNextBelt();
     const { LESSONS, GROUPS, BELTS, state: S } = tnApp, nl = tnApp.nextLesson();
     const passed = l => S.lessons[l.id]?.stars >= 1;
     const baseDone = LESSONS.filter(passed).length, baseAll = baseDone === LESSONS.length;
@@ -114,6 +115,25 @@
     $id('scNinja').textContent = 'Entrenar';
   }
 
+  // The same card with the seven belts (app.js, TN_BELTS): the next lesson, its belt and how far that belt goes.
+  function renderNextBelt() {
+    const { TN_BELTS: TB, GROUPS, BELTS } = tnApp, nl = tnApp.nextLesson();
+    const allDone = TB.every((_, bi) => tnApp.tnBeltState(bi).complete);
+    const bi = Math.max(0, tnApp.tnBeltOf(nl)), B = TB[bi], bs = tnApp.tnBeltState(bi);
+    $id('tkNextEyebrow').textContent = allDone ? 'Cinturón negro completo 🥋' : `Seguí acá · ${B.name} · ${B.theme}`;
+    $id('tkNextTitle').textContent = allDone ? 'Repasá o medí tu velocidad' : `Lección ${tnApp.tnNum(nl)}: ${nl.name}`;
+    $id('tkNextDesc').textContent = allDone ? 'Completaste los siete cinturones. Volvé a cualquier lección para sumar estrellas.' : nl.belt != null ? `${BELTS[nl.belt].theme}. Meta: ${nl.goal} palabras por minuto.` : GROUPS[nl.g].desc;
+    $id('tkBar').style.width = Math.round(bs.done / bs.total * 100) + '%';
+    $id('tkCount').textContent = `${bs.done} de ${bs.total} en este cinturón`;
+    $id('tkContinue').textContent = allDone ? 'Repasar →' : bs.done || bi ? 'Continuar →' : 'Empezar →';
+    $id('tkKeys').innerHTML = nl.type === 'keys' ? [...nl.keys].map(k => `<kbd style="--fc:${tnApp.fcol(tnApp.key(k)?.f || 'th')}">${k.toUpperCase()}</kbd>`).join('') : `<span class="nv-difficulty-belt belt-${B.id} nv-belt-big"></span>`;
+    $id('tkBeltsBox').hidden = true; // the path itself is the row of belts
+    document.body.classList.remove('nv-base-done');
+    fold(); renderDojo(); renderCheck();
+    $id('continue').textContent = 'Entrenar';
+    $id('scNinja').textContent = 'Entrenar';
+  }
+
   // Mi dojo: who you are and your next goal; the training in its current block (not the whole mountain of
   // lessons), your marks with their evolution, and the battles (a score to beat, sent by link: desafios.js).
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -128,16 +148,17 @@
     $id('mdName').textContent = name || 'Ninja invitado';
     $id('mdAv').textContent = name ? [...name][0].toUpperCase() : '🥷';
     const ppm = tnApp.bestPpm(), next = ppm ? tnApp.nextTier(ppm) : null;
-    const belt = baseAll ? (inBelt ? B.name : 'Cinturón negro') : 'Cinturón blanco';
+    const TB = tnApp.TN_BELTS, tbi = TB ? Math.max(0, tnApp.tnBeltOf(nl)) : -1;
+    const belt = TB ? (allDone ? 'Cinturón negro' : TB[tbi].name) : baseAll ? (inBelt ? B.name : 'Cinturón negro') : 'Cinturón blanco';
     $id('mdLevel').textContent = `${belt} · ${ppm ? `escribís como ${tnApp.tierName(ppm)} (${ppm} ppm)` : 'todavía sin medir tu velocidad'}`;
-    // The block in progress: the group of lessons of the course, or the belt after it
-    const block = inBelt ? { name: B.name, ...tnApp.beltState(nl.belt) } : (() => { const ls = LESSONS.filter(l => l.g === nl.g); return { name: GROUPS[nl.g].name, done: ls.filter(passed).length, total: ls.length }; })();
+    // The block in progress: its belt of the seven, or (without them) the group of lessons of the course or the belt after it
+    const block = TB ? { name: TB[tbi].name, ...tnApp.tnBeltState(tbi) } : inBelt ? { name: B.name, ...tnApp.beltState(nl.belt) } : (() => { const ls = LESSONS.filter(l => l.g === nl.g); return { name: GROUPS[nl.g].name, done: ls.filter(passed).length, total: ls.length }; })();
     const left = block.total - block.done;
     $id('mdGoal').textContent = allDone ? (ppm && next ? `Llegar a ${next.min} ppm` : 'Superar tu mejor marca') : !ppm ? 'Medir tu velocidad (1 min)' : `Terminar «${block.name}»: ${left === 1 ? 'te falta 1 lección' : `te faltan ${left} lecciones`}`;
     $id('mdBlock').textContent = allDone ? 'Curso y cinturones completos' : `Bloque actual · ${block.name}`;
-    $id('mdNextTitle').textContent = allDone ? 'Repasá o medí tu velocidad' : `Lección ${nl.n}: ${nl.name}`;
+    $id('mdNextTitle').textContent = allDone ? 'Repasá o medí tu velocidad' : `Lección ${TB ? tnApp.tnNum(nl) : nl.n}: ${nl.name}`;
     $id('mdBar').style.width = Math.round(block.done / block.total * 100) + '%';
-    $id('mdCount').textContent = `${block.done} de ${block.total} del bloque` + (inBelt || baseAll ? '' : ` · ${baseDone} de ${LESSONS.length} del curso`);
+    $id('mdCount').textContent = TB ? `${block.done} de ${block.total} de este cinturón` : `${block.done} de ${block.total} del bloque` + (inBelt || baseAll ? '' : ` · ${baseDone} de ${LESSONS.length} del curso`);
     renderMarks();
     renderBattles();
   }
@@ -422,11 +443,29 @@
     }));
     document.querySelectorAll('[role="tab"][data-sub]').forEach(b => b.onclick = () => { const sec = b.closest('[data-view-of]').dataset.viewOf; setSub(sec, b.dataset.sub); if (sec === 'mente') history.replaceState(null, '', location.pathname + location.search + (b.dataset.sub === 'relampago' ? '#desafios' : '#ninja')); capture('nav_tab', { tab: sec, sub: b.dataset.sub }); });
     document.querySelectorAll('[data-sub-go]').forEach(b => b.onclick = () => setSub(b.closest('[data-view-of]').dataset.viewOf, b.dataset.subGo));
-    $id('testBtn').onclick = () => goTo('teclado', { sub: 'medir' });
+    $id('testBtn').onclick = () => { capture('home_cta', { cta: 'teclado_medir' }); goTo('teclado', { sub: 'medir' }); };
     $id('homeBtn').onclick = () => { Desafios.close(); tnApp.goHome(); returnTo = null; goTo('inicio'); };
-    $id('continue').onclick = () => goTo('teclado', { sub: 'entrenar' });
-    $id('scNinja').onclick = () => goTo('mente', { sub: 'entrenar' });
-    $id('scMax').onclick = () => goTo('desafios');
+    // The two doors of Inicio: "Entrenar" and "Ver más" open the same training; each button says which one it was
+    const cta = (id, name, fn) => { $id(id).onclick = () => { capture('home_cta', { cta: name }); fn?.(); }; }; // replaces app.js's own handler
+    cta('continue', 'teclado_entrenar', () => goTo('teclado', { sub: 'entrenar' }));
+    cta('nvTkMore', 'teclado_ver_mas', () => goTo('teclado', { sub: 'entrenar' }));
+    cta('scNinja', 'mente_entrenar', () => goTo('mente', { sub: 'entrenar' }));
+    cta('nvMentalIq', 'mente_desafio_iq', () => goTo('mente', { sub: 'desafio' }));
+    cta('scMax', 'mente_relampago', () => goTo('desafios'));
+    cta('nvMentalCo', 'mente_empresas'); // a link to /profesional
+    // "Todos": every training and test of the temple (the lightning challenges are drawn by renderTiles)
+    const ALL = {
+      teclado: () => goTo('teclado', { sub: 'entrenar' }),
+      sim: () => tnApp.startQuiz('sim'),
+      iq: () => tnApp.startQuiz('ninja'),
+      empresas: null, // a link to /profesional
+    };
+    document.querySelectorAll('[data-all]').forEach(t => t.addEventListener('click', () => {
+      const k = t.dataset.all; capture('home_all_tile', { tile: k });
+      if (k in ALL) return ALL[k]?.();
+      document.querySelector(`#cogTracks button[data-v="${k}"]`)?.click(); // a track of Ninja mental
+      goTo('mente', { sub: 'entrenar' });
+    }));
     $id('nvHeroSpeed').onclick = () => { if (touchOnly()) { capture('quick_start', { kind: 'celu' }); openGame('celu'); } else { capture('quick_start', { kind: 'speed' }); tnApp.start('test'); } };
     $id('nvHeroIq').onclick = $id('nvGameIq').onclick = () => { capture('quick_start', { kind: 'iq' }); tnApp.startQuiz('ninja'); };
     $id('nvGameSim').onclick = () => { capture('quick_start', { kind: 'sim' }); tnApp.startQuiz('sim'); };

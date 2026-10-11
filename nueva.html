@@ -41,7 +41,7 @@
     <div class="nv-right">
 
       <button class="upgrade-cta" id="upgradeCta">✦ <span id="upgradeLabel">Ilimitado</span></button>
-      <a class="nv-profile-link" href="#perfil" data-go="dojo"><span aria-hidden="true">◯</span> Perfil</a>
+      <a class="nv-profile-link" href="#perfil" data-go="dojo" aria-label="Perfil"><span aria-hidden="true">◯</span> <span class="nv-pl-txt">Perfil</span></a>
     </div>
   </header>
   <section class="challenge-banner" id="challengeBanner" hidden aria-live="polite">
@@ -72,11 +72,11 @@
       <section class="nv-doors" id="sections" aria-label="Elegí qué querés practicar">
         <article class="nv-door">
           <div class="nv-ico" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></div>
-          <div class="nv-tags"><span>26 lecciones</span><span>Medición de velocidad</span><span>Guía de dedos</span></div>
+          <div class="nv-tags"><span>7 cinturones</span><span>66 lecciones</span><span>Medición de velocidad</span></div>
           <h2>Ninja del teclado</h2>
           <p>Aprendé a escribir sin mirar, con un dedo para cada tecla. Lecciones cortas, a tu ritmo.</p>
           <div class="nv-stats"><div><b id="scLessons">0/26</b><span>lecciones</span></div><div><b id="scPpm">—</b><span>mejor ppm</span></div></div>
-          <div class="actions"><button class="btn primary" id="continue"></button><button class="btn" id="testBtn">Medir velocidad</button></div>
+          <div class="actions nv-ctas"><button class="btn primary nv-cta-main" id="continue"></button><button class="btn" id="nvTkMore">Ver más</button><button class="btn" id="testBtn">Medir velocidad</button></div>
         </article>
         <article class="nv-door">
           <div class="nv-ico" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg></div>
@@ -84,7 +84,7 @@
           <h2>Ninja mental</h2>
           <p>Los tests que usan las empresas para elegir candidatos, con la técnica y la explicación de cada respuesta.</p>
           <div class="nv-stats"><div><b id="scSessions">0/45</b><span>sesiones</span></div><div><b id="scIq">—</b><span>mejor IQ ninja</span></div></div>
-          <div class="actions"><button class="btn primary" id="scNinja">Empezar a entrenar →</button><button class="btn" id="scMax">Desafíos relámpago</button></div>
+          <div class="actions nv-ctas nv-ctas-4"><button class="btn primary" id="scNinja">Entrenar</button><button class="btn" id="nvMentalIq">Desafío IQ</button><button class="btn" id="scMax">Desafío relámpago</button><a class="btn" id="nvMentalCo" href="/profesional">Entrenar tests de empresas</a></div>
         </article>
       </section>
       <section class="nv-home-ranks" aria-labelledby="homeRanksTitle">
@@ -94,7 +94,20 @@
           <article><h3>Ninja mental</h3><div class="seg" aria-label="Ranking mental"><button data-home-rank="ninja" aria-pressed="true">Desafío</button><button data-home-rank="cog" aria-pressed="false">Avance</button></div><ol class="rank-list" id="homeMentalRank"></ol><p class="rank-note" id="homeMentalNote"></p></article>
         </div>
       </section>
-      <a class="nv-lightning-link" href="#desafios" data-go="desafios">⚡ Desafíos relámpago <span>Memoria, reflejos y más, dentro de Ninja mental →</span></a>
+      <section class="nv-all" aria-labelledby="allTitle">
+        <div class="nv-sh"><div><h2 id="allTitle">Todos</h2><p>Cada entrenamiento y cada test del templo, en un solo lugar.</p></div></div>
+        <div class="nv-games">
+          <button class="nv-game" data-all="teclado"><span class="nv-vis"><span class="nv-vis-keys"><kbd>F</kbd><kbd>J</kbd></span></span><b>Ninja del teclado</b><span>Escribí sin mirar · 7 cinturones</span></button>
+          <button class="nv-game" data-all="fig"><span class="nv-vis"><svg viewBox="0 0 124 40" width="112" aria-hidden="true"><rect x="6" y="8" width="24" height="24" rx="3" fill="none" stroke="var(--accent)" stroke-width="2.5"/><circle cx="62" cy="20" r="12" fill="var(--accent)"/><path d="M92 32 L104 8 L116 32 Z" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/></svg></span><b>Figuras abstractas</b><span>Series y matrices · 5 cinturones</span></button>
+          <button class="nv-game" data-all="num"><span class="nv-vis"><svg viewBox="0 0 112 48" width="100" aria-hidden="true"><g fill="var(--accent-soft)"><rect x="4" y="28" width="14" height="18" rx="2"/><rect x="26" y="18" width="14" height="28" rx="2"/><rect x="70" y="22" width="14" height="24" rx="2"/><rect x="92" y="14" width="14" height="32" rx="2"/></g><rect x="48" y="8" width="14" height="38" rx="2" fill="var(--accent)"/></svg></span><b>Razonamiento numérico</b><span>Tablas y porcentajes · 5 cinturones</span></button>
+          <button class="nv-game" data-all="eng"><span class="nv-vis"><span class="nv-vis-chips"><i>A2</i><i>B1</i><i>B2</i><i class="on">C1</i></span></span><b>Inglés para el trabajo</b><span>Del básico al avanzado · 5 cinturones</span></button>
+          <button class="nv-game" data-all="log"><span class="nv-vis"><span class="nv-vis-txt mono">2 4 8 <i>?</i></span></span><b>Lógica y series</b><span>Reglas y patrones · 5 cinturones</span></button>
+          <button class="nv-game" data-all="sim"><span class="nv-vis"><span class="nv-vis-txt">11<small>/11</small></span></span><b>Simulacro de entrevista</b><span>Como el día del test · 11 min</span></button>
+          <button class="nv-game" data-all="iq"><span class="nv-vis"><span class="nv-vis-txt">IQ <i>?</i></span></span><b>Desafío IQ ninja</b><span>Figuras, números e inglés · 5 min</span></button>
+          <span data-games hidden></span>
+          <a class="nv-game" href="/profesional" data-all="empresas"><span class="nv-vis"><svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5l8-2v18M12 21V9l8 2v10M3 21h18M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/></svg></span><b>Tests de empresas</b><span>El formato de cada empresa</span></a>
+        </div>
+      </section>
     </div>
 
     <!-- ============ TECLADO ============ -->
@@ -146,7 +159,7 @@
       <span class="summary-flower" aria-hidden="true">✳</span>
     </section>
         <section class="learning" id="learning" aria-labelledby="learningTitle">
-      <div class="section-heading"><div><span class="eyebrow">TU CAMINO</span><h2 id="learningTitle">Lecciones</h2></div><span>26 lecciones · Sin apuro</span></div>
+      <div class="section-heading"><div><span class="eyebrow">TU CAMINO</span><h2 id="learningTitle">Tu entrenamiento · 7 cinturones</h2></div><span>66 lecciones · Sin apuro</span></div>
       <div class="path" id="path"></div>
     </section>
         <p class="notice" id="touchNote" hidden>En el celular podés practicar con el teclado de la pantalla, pero el método de los dedos se aprende con un teclado físico: usá una computadora o conectá un teclado a la tablet.</p>
