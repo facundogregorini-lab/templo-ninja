@@ -219,5 +219,6 @@ document.querySelectorAll('[data-cta]').forEach(a => a.addEventListener('click',
   fbq('init', id, ext ? { external_id: ext } : {}); fbq('track', 'PageView');
 })();
 </script>
+<script>/* Back to the home the person uses: /nueva leaves its mark (app.js, tn-home) and its links to "/" go there */ try{if(localStorage.getItem('tn-home')==='/nueva')for(const a of document.querySelectorAll('a[href="/"],a[href^="/?"],a[href^="/#"]'))a.setAttribute('href','/nueva'+a.getAttribute('href').slice(1))}catch{}</script>
 </body>
 </html>

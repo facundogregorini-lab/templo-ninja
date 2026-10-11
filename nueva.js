@@ -29,8 +29,17 @@
     document.querySelectorAll('[data-profile-panel]').forEach(p => { p.hidden = p.dataset.profilePanel !== tab; });
     document.querySelectorAll('[data-profile]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.profile === tab)));
   }
+  // The browser's history: going to a section from the page adds an entry, and so does a practice (a lesson, a session
+  // of Ninja mental or a quick challenge: one entry for all of it). Back goes to the previous screen inside /nueva,
+  // and leaves it only from the first one. Without this every move replaced the address and Back left /nueva at once.
+  let pushNext = false, leaving = false, skipHash = null, curSec = 'inicio', curSub;
+  const inScreen = () => history.state?.tn === 'screen';
+  function enterScreen(url = location.href) { if (inScreen()) history.replaceState({ tn: 'screen' }, '', url); else history.pushState({ tn: 'screen' }, '', url); }
+  // Leaving a practice from the page (its own back button, the end of a game): drop its entry, as Back would
+  function leaveScreen() { if (!inScreen() || leaving) return; leaving = true; history.back(); }
+
   // Go to a section: scroll there (instantly when coming back from a lesson), say where we are in the address.
-  function goTo(sec, { sub, scroll = true, smooth = true } = {}) {
+  function goTo(sec, { sub, scroll = true, smooth = true, replace = false } = {}) {
     navigationEpoch++;
     if (!SECTIONS.includes(sec)) sec = 'inicio';
     const screen = sec === 'desafios' ? 'mente' : sec;
@@ -39,8 +48,10 @@
     else if (sub) setSub(sec, sub);
     if (sec === 'dojo') profileTab('dojo');
     markCurrent(screen);
-    const want = location.pathname + location.search + HASH[sec];
-    if (location.pathname + location.search + location.hash !== want) history.replaceState(null, '', want);
+    curSec = sec; curSub = sub;
+    const want = location.pathname + location.search + HASH[sec], push = pushNext && !leaving && !replace;
+    pushNext = false;
+    if (location.pathname + location.search + location.hash !== want) { if (push) history.pushState(null, '', want); else history.replaceState(null, '', want); }
     if (scroll) scrollTo({ top: 0, behavior: 'instant' });
   }
 
@@ -73,14 +84,15 @@
     gameFrom = opts.battle || opts.from === 'dojo' ? 'dojo' : id === 'celu' ? 'teclado' : 'desafios';
     gameSub = opts.battle ? 'batallas' : opts.from === 'dojo' ? 'marcas' : undefined;
     $id('home').hidden = true; $id('game').hidden = false; document.body.dataset.view = 'game';
-    history.replaceState(null, '', location.pathname + location.search + '#juego-' + id);
+    enterScreen(location.pathname + location.search + '#juego-' + id);
     scrollTo({ top: 0 });
     Desafios.open(id, closeGame, opts);
   }
   function closeGame() {
     $id('game').hidden = true;
+    leaveScreen();
     tnApp.goHome(); renderTiles(); renderDojo(); renderBattles(true);
-    goTo(gameFrom, { sub: gameSub, smooth: false });
+    goTo(gameFrom, { sub: gameSub, smooth: false, replace: true });
     if (activityDone) maybeNudge('activity');
   }
 
@@ -411,12 +423,13 @@
   // app.js tells where it goes; coming back from a lesson or a session, the page returns to that section.
   let returnTo = null;
   window.tnLayout = {
-    start: l => { returnTo = { sec: 'teclado', sub: l === 'test' && !ctl().measure ? 'medir' : 'entrenar' }; },
+    start: l => { returnTo = { sec: 'teclado', sub: l === 'test' && !ctl().measure ? 'medir' : 'entrenar' }; enterScreen(); },
     typed: r => { activityDone = true; typed(r); },
-    quiz: sess => { returnTo = { sec: 'mente', sub: sess === 'ninja' ? 'desafio' : 'entrenar' }; },
-    cog: () => { if (window.tnApp) goTo('mente', { sub: 'entrenar' }); else returnTo = { sec: 'mente', sub: 'entrenar' }; },
+    quiz: sess => { returnTo = { sec: 'mente', sub: sess === 'ninja' ? 'desafio' : 'entrenar' }; enterScreen(); },
+    cog: () => { if (window.tnApp) goTo('mente', { sub: 'entrenar' }); else { returnTo = { sec: 'mente', sub: 'entrenar' }; history.replaceState(history.state, '', location.pathname + location.search + '#ninja'); } }, // while starting up, the address decides (below)
     home: () => {
       renderNext();
+      if (window.tnApp && tnApp.mode() === 'home' && $id('game').hidden) leaveScreen(); // back from a lesson or a session by its own button
       if (returnTo && window.tnApp) { const r = returnTo, epoch = navigationEpoch; returnTo = null; requestAnimationFrame(() => { if (epoch !== navigationEpoch) return; goTo(r.sec, { sub: r.sub, smooth: false }); if (activityDone) maybeNudge('activity'); }); }
     },
   };
@@ -536,6 +549,17 @@
     renderTiles(); renderNext(); renderBridge();
     const linkedGame = gameOf(location.hash);
     if (tnApp.mode() === 'home' && !battleId) { if (linkedGame) openGame(linkedGame); else goTo(secOf(location.hash), { smooth: false }); }
-    addEventListener('hashchange', () => { if (tnApp.mode() !== 'home' || !$id('game').hidden) return; if (gameOf(location.hash)) openGame(gameOf(location.hash)); else goTo(secOf(location.hash)); });
+    // Back and Forward: out of a practice, or to the section of that entry (hashchange, below)
+    document.addEventListener('click', e => { if (e.target.closest?.('#home, .nv-top, .nv-tabbar')) { pushNext = true; setTimeout(() => { pushNext = false; }); } }, true);
+    addEventListener('popstate', () => {
+      if (leaving) { // the entry of a practice left from the page: the section already on screen keeps the address
+        leaving = false; goTo(curSec, { sub: curSub, scroll: false, replace: true });
+        skipHash = location.href; setTimeout(() => { skipHash = null; }, 200);
+        return;
+      }
+      if (!$id('game').hidden) return Desafios.close();
+      if (tnApp.mode() !== 'home') tnApp.goHome();
+    });
+    addEventListener('hashchange', () => { if (skipHash === location.href) { skipHash = null; return; } if (tnApp.mode() !== 'home' || !$id('game').hidden) return; if (gameOf(location.hash)) openGame(gameOf(location.hash)); else goTo(secOf(location.hash)); });
   });
 })();

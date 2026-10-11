@@ -365,6 +365,43 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     const hb = await open('/');
     check('The current home lists the five belts after the base course', (await hb.$$('#path .group.belt')).length === 5 && (await hb.$$('#path .group.belt .lc')).length === 40);
 
+    // The browser's Back and Forward stay inside /nueva (it used to replace every address, so Back left for the old home)
+    const hctx = await browser.newContext(); const hp = await hctx.newPage(); hp.on('pageerror', e => errors.push(e.message));
+    const at = () => { const u = new URL(hp.url()); return u.pathname + u.hash; };
+    await hp.goto(SITE + '/'); await hp.goto(SITE + '/nueva'); await hp.waitForLoadState('networkidle');
+    await hp.click('.nv-links [data-go="teclado"]'); await hp.click('.nv-links [data-go="mente"]');
+    await hp.goBack();
+    check('Back goes to the previous section of /nueva', at() === '/nueva#teclado' && await onScreen(hp, 'teclado'));
+    await hp.goBack();
+    check('…and then to its Inicio, not to the old home', at() === '/nueva' && await onScreen(hp, 'inicio'));
+    await hp.goForward();
+    check('Forward works too', at() === '/nueva#teclado' && await onScreen(hp, 'teclado'));
+    await hp.click('#tkContinue');
+    check('A lesson opens', await hp.evaluate(() => tnApp.mode() === 'typing'));
+    await hp.goBack();
+    check('Back from a lesson returns to its section, still in /nueva', at() === '/nueva#teclado' && await hp.evaluate(() => tnApp.mode() === 'home') && await onScreen(hp, 'teclado'));
+    await hp.click('#tkContinue'); await hp.click('#back'); await hp.waitForTimeout(300);
+    check('Leaving a lesson by its own button keeps the section', at() === '/nueva#teclado' && await hp.evaluate(() => tnApp.mode() === 'home'));
+    await hp.goBack();
+    check('…without leaving an extra entry: Back goes on to Inicio', at() === '/nueva' && await onScreen(hp, 'inicio'));
+    await hp.click('.nv-links [data-go="mente"]'); await hp.click('[data-view-of="mente"] [role="tab"][data-sub="relampago"]');
+    await hp.click('#desafios .nv-game[data-game="chimpance"]');
+    check('A quick challenge opens', await hp.isVisible('#game') && at() === '/nueva#juego-chimpance');
+    await hp.goBack();
+    check('Back closes it and returns to the challenges', !(await hp.isVisible('#game')) && at() === '/nueva#desafios' && await onScreen(hp, 'desafios'));
+    await hp.click('#desafios .nv-game[data-game="chimpance"]'); await hp.click('#gameBack'); await hp.waitForTimeout(300);
+    await hp.goBack();
+    check('Leaving a challenge by its own button leaves no extra entry either', at() === '/nueva' && await onScreen(hp, 'inicio'));
+    await hp.goto(SITE + '/precios.html');
+    check('Coming from /nueva, the other pages lead back to /nueva', (await hp.$$eval('a[href="/"]', as => as.length)) === 0 && (await hp.getAttribute('a.brand', 'href')) === '/nueva');
+    await hp.goto(SITE + '/profesional');
+    check('…/profesional too, with its links to a track or a mock test', (await hp.$$eval('a[href^="/?"]', as => as.length)) === 0 && await hp.$('a[href="/nueva?pista=log"]') !== null);
+    const pl = await open('/nueva?pista=log');
+    check('/nueva?pista=log (a link of /profesional) opens Mente on that track', await onScreen(pl, 'mente') && (await pl.getAttribute('#cogTracks [data-v="log"]', 'aria-pressed')) === 'true');
+    const oc = await browser.newContext(); const op = await oc.newPage();
+    await op.goto(SITE + '/'); await op.waitForLoadState('networkidle'); await op.goto(SITE + '/precios.html');
+    check('Coming from the current home, they still lead to /', (await op.getAttribute('a.brand', 'href')) === '/');
+
     // The current home keeps working as before with the shared engine
     const h = await open('/');
     check('The current home still has no layout of its own and opens as always', await h.evaluate(() => !window.tnLayout && !!window.tnApp) && await visible(h, '#continue') && await visible(h, '#path'));
