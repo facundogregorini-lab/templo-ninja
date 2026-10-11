@@ -78,6 +78,23 @@ const passed = l => S.lessons[l.id]?.stars >= 1;
 function beltState(bi) { const ls = BELTS[bi].lessons, done = ls.filter(passed).length; return { done, total: ls.length, complete: done === ls.length, gold: ls.every(l => S.lessons[l.id]?.stars === 3) }; }
 const currentBelt = () => { const i = BELTS.findIndex((_, bi) => !beltState(bi).complete); return i < 0 ? BELTS.length - 1 : i; };
 const lessonPlace = l => l.belt != null ? `${BELTS[l.belt].name} · lección ${l.n} de ${BELTS[l.belt].lessons.length}` : `Lección ${l.n}`;
+// /nueva shows the typing course in seven belts, like Ninja mental: the 26 lessons of the base course in the first
+// four, the five belts of belts.js joined two by two after them, and black last. The same lessons, ids and progress:
+// only how they are grouped and named changes. index.html keeps the course and its five belts.
+const TN_BELTS = window.tnLayout && BELTS.length === 5 ? [
+  { id: 'blanco', name: 'Cinturón blanco', theme: GROUPS[0].name, desc: GROUPS[0].desc, lessons: LESSONS.filter(l => l.g === 0) },
+  { id: 'amarillo', name: 'Cinturón amarillo', theme: GROUPS[1].name, desc: GROUPS[1].desc, lessons: LESSONS.filter(l => l.g === 1) },
+  { id: 'naranja', name: 'Cinturón naranja', theme: GROUPS[2].name, desc: GROUPS[2].desc, lessons: LESSONS.filter(l => l.g === 2) },
+  { id: 'verde', name: 'Cinturón verde', theme: 'Mayúsculas, tildes y textos', desc: 'Shift con la otra mano, la tilde antes de la vocal y frases reales para ganar ritmo.', lessons: LESSONS.filter(l => l.g >= 3) },
+  { id: 'azul', name: 'Cinturón azul', theme: 'Puntuación y números', desc: 'Comas, preguntas, comillas, precios, fechas, horas y teléfonos.', lessons: [...BELTS[0].lessons, ...BELTS[1].lessons] },
+  { id: 'marron', name: 'Cinturón marrón', theme: 'Palabras frecuentes y textos de trabajo', desc: 'Las palabras que más se usan en español, mails, pedidos, datos de clientes y planillas.', lessons: [...BELTS[2].lessons, ...BELTS[3].lessons] },
+  { id: 'negro', name: 'Cinturón negro', theme: BELTS[4].theme, desc: BELTS[4].desc, lessons: BELTS[4].lessons },
+] : null;
+const tnBeltOf = l => TN_BELTS ? TN_BELTS.findIndex(b => b.lessons.includes(l)) : -1;
+const tnNum = l => [...LESSONS, ...BELT_LESSONS].indexOf(l) + 1; // its number in the whole path: 1 to 66
+const lessonGoal = l => l.goal || GROUPS[l.g]?.goal;
+function tnBeltState(bi) { const ls = TN_BELTS[bi].lessons, done = ls.filter(passed).length; return { done, total: ls.length, complete: done === ls.length, gold: ls.every(l => S.lessons[l.id]?.stars === 3) }; }
+const tnBeltArt = bi => `<span class="nv-difficulty-belt belt-${TN_BELTS[bi].id}" aria-hidden="true"></span>`;
 
 /* ---------- Storage ---------- */
 const STORE = 'teclado-ciego-v1';
@@ -276,7 +293,8 @@ function renderHome() {
   $('scLessons').textContent = `${LESSONS.filter(l => S.lessons[l.id]?.stars >= 1).length}/${LESSONS.length}`;
   $('scPpm').textContent = bestTest || '—';
   renderEvo();
-  $('path').replaceChildren(...GROUPS.map((g, gi) => {
+  if (TN_BELTS) $('path').replaceChildren(...tnBeltSections(nl));
+  else $('path').replaceChildren(...GROUPS.map((g, gi) => {
     const sec = document.createElement('section'); sec.className = 'group';
     sec.innerHTML = `<div class="group-head"><div><h2>${g.name}</h2><p>${g.desc} Meta para 3 estrellas: ${g.goal} palabras por minuto con 95% de precisión.</p></div>${evoCard(gi)}</div>`;
     const cards = document.createElement('div'); cards.className = 'cards';
@@ -295,6 +313,28 @@ function renderHome() {
   }), Object.assign(document.createElement('section'), { className: 'group final', innerHTML: `<div class="group-head"><div><h2>La cima</h2><p>Después de los textos, el último salto de la evolución.</p></div>${evoCard(FINAL)}</div>` }), ...beltSections(nl));
   renderCog();
   window.tnLayout?.home?.();
+}
+
+// /nueva: the seven belts, each with its lessons and how many are passed (the one in progress opens; nueva.js folds the rest).
+function tnBeltSections(nl) {
+  return TN_BELTS.map((B, bi) => {
+    const st = tnBeltState(bi), goals = B.lessons.map(lessonGoal), lo = Math.min(...goals), hi = Math.max(...goals);
+    const sec = document.createElement('section'); sec.className = 'group tn-belt'; sec.dataset.belt = B.id;
+    const steps = `<span class="evo-steps">${B.lessons.map(l => `<i class="${passed(l) ? 'on' : ''}"></i>`).join('')}</span>`;
+    sec.innerHTML = `<div class="group-head"><div><h2><span class="nv-level-label">${tnBeltArt(bi)} ${B.name}</span>${B.theme}</h2><p>${B.desc} ${B.lessons.length} lecciones · meta para 3 estrellas: ${lo === hi ? lo : `de ${lo} a ${hi}`} palabras por minuto con 95% de precisión.</p></div>`
+      + `<figure class="nv-cog-belt nv-tk-belt">${tnBeltArt(bi)}<figcaption><b>${B.name}</b><span>${st.complete ? (st.gold ? '¡Conseguido, con 3 estrellas!' : '¡Conseguido!') : `${st.done} de ${st.total} lecciones de este cinturón.`}</span>${steps}</figcaption></figure></div>`;
+    const cards = document.createElement('div'); cards.className = 'cards';
+    for (const l of B.lessons) {
+      const rec = S.lessons[l.id], b = document.createElement('button');
+      b.className = 'lc' + (l === nl ? ' next' : '');
+      const caps = l.type === 'keys' ? [...l.keys].map(k => `<kbd style="--fc:${fcol(MAP[k]?.f || 'th')}">${k.toUpperCase()}</kbd>`).join('') : `<span class="name">${l.name}</span>`;
+      b.innerHTML = `<span class="meta"><span>Lección ${tnNum(l)}</span>${l === nl ? '<span class="pill">Sigue</span>' : stars(rec?.stars || 0)}</span><span class="caps">${caps}</span><span class="best">${rec ? `Mejor: ${rec.ppm} ppm · ${rec.acc}%` : l.type === 'keys' ? 'Teclas nuevas' : l.goal ? `Meta: ${l.goal} ppm` : 'Sin intentos'}</span>`;
+      b.onclick = () => start(l);
+      cards.append(b);
+    }
+    sec.append(cards);
+    return sec;
+  });
 }
 
 // The belts, after the base course: one section each (current, done or still ahead), with its lessons.
@@ -447,7 +487,8 @@ function start(l, method, seed) {
   idx = 0; errors = 0; errBy = {}; missed = new Set(); deadPending = false; hintOn = false; holdIdx = -1; pendingMark = ''; $('accentHelp').hidden = true;
   running = false; accMs = 0; clearInterval(timer); timer = setInterval(tick, 200);
   const g = l === 'test' ? null : l.belt != null ? BELTS[l.belt] : GROUPS[l.g];
-  $('lGroup').textContent = l === 'test' ? 'Medición de velocidad · 1 minuto' : l.belt != null ? lessonPlace(l) : `Lección ${l.n} · ${g.name}`;
+  const tb = l === 'test' ? -1 : tnBeltOf(l);
+  $('lGroup').textContent = l === 'test' ? 'Medición de velocidad · 1 minuto' : tb >= 0 ? `Lección ${tnNum(l)} · ${TN_BELTS[tb].name}` : l.belt != null ? lessonPlace(l) : `Lección ${l.n} · ${g.name}`;
   $('lName').textContent = l === 'test' ? tm.name : l.name;
   $('tip').textContent = l === 'test' ? `${tm.desc} Escribí todo lo que puedas en 60 segundos.` : g.tip;
   $('sTimeLbl').textContent = l === 'test' ? 'restante' : 'tiempo';
@@ -612,6 +653,7 @@ function finish() {
   const tm = METHODS.find(m => m.id === testMethod);
   let prevSame = null;
   const evoBefore = isTest || belt ? null : evoState(cur.g), finalBefore = isTest || belt ? null : evoState(FINAL), beltBefore = belt ? beltState(cur.belt) : null, prevStars = isTest ? 0 : S.lessons[cur.id]?.stars || 0;
+  const tb = isTest ? -1 : tnBeltOf(cur), tnBefore = tb >= 0 ? tnBeltState(tb) : null;
   if (isTest) {
     prevSame = [...S.tests].reverse().find(t => t.method === testMethod) || null;
     S.tests.push({ method: testMethod, ppm, acc, seed: testSeed, accents: S.tildes, date: Date.now() });
@@ -626,7 +668,7 @@ function finish() {
   save();
   window.tnLayout?.typed?.({ id: isTest ? 'test' : cur.id, ppm, acc, method: isTest ? testMethod : null, accents: S.tildes });
   tn.capture('practice_completed', { ...practiceInfo(false), wpm: ppm, accuracy: acc, stars: isTest ? null : st ?? null, duration_ms: Math.round(ms) });
-  recordSession({ lesson: isTest ? 'test' : cur.id, name: isTest ? `Medición ${tm.as}` : belt ? `${BELTS[cur.belt].name} · ${cur.name}` : `Lección ${cur.n} · ${cur.name}`, method: isTest ? testMethod : undefined, stars: st, ppm, acc, ms })
+  recordSession({ lesson: isTest ? 'test' : cur.id, name: isTest ? `Medición ${tm.as}` : tb >= 0 ? `${TN_BELTS[tb].name} · ${cur.name}` : belt ? `${BELTS[cur.belt].name} · ${cur.name}` : `Lección ${cur.n} · ${cur.name}`, method: isTest ? testMethod : undefined, stars: st, ppm, acc, ms })
     .then(saved => saved && loadRanking()).then(() => { if (isTest && auth.name) rankLine(ppm); });
   const weak = Object.entries(errBy).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const keyTxt = c => c === ' ' ? 'espacio' : c;
@@ -653,6 +695,15 @@ function finish() {
       <p class="joke">${rnd(TIERS[ti].jokes)}</p>
       <p>${medianText(ppm)}${acc < 90 ? ' Y ojo: con tantos errores, parecés un chimpancé con guantes.' : ''}</p>
       ${speedScale(ppm)}${challengeResult(ppm)}<p id="rankLine">${auth.name ? '' : 'Entrá con tu cuenta para aparecer en el ranking de velocidad.'}</p></div></div>`;
+  } else if (tb >= 0) { // /nueva: the lesson counts toward its belt of the seven
+    const B = TN_BELTS[tb], after = tnBeltState(tb), won = after.complete && !tnBefore.complete, nb = TN_BELTS[tb + 1];
+    const title = won ? `¡Conseguiste el ${B.name.toLowerCase()}! 🥋` : `${B.name}: ${after.done} de ${after.total}`;
+    const txt = won ? (nb ? `Sigue el ${nb.name.toLowerCase()}: ${nb.theme.toLowerCase()}.` : '¡Completaste todos los cinturones! Sos cinturón negro de Templo Ninja.')
+      : cur.review ? `${B.theme}. Aprobá las ${after.total} lecciones para conseguirlo.`
+      : !st && prevStars < 1 ? `Aprobala con 90% de precisión para avanzar en el ${B.name.toLowerCase()}.` : `${B.theme}. Aprobá las ${after.total} lecciones para conseguirlo.`;
+    if (won) tn.capture('typing_belt_won', { belt: B.id });
+    if (!belt && !finalBefore.complete && evoState(FINAL).complete) tn.capture('course_completed', { lessons: LESSONS.length });
+    extra = `<div class="result-evo result-belt">${tnBeltArt(tb).replace('nv-difficulty-belt', 'nv-difficulty-belt nv-belt-result')}<div><b>${title}</b><p>${txt}</p><span class="evo-steps">${B.lessons.map(l => `<i class="${passed(l) ? 'on' : ''}"></i>`).join('')}</span></div></div>`;
   } else if (belt) {
     const B = BELTS[cur.belt], after = beltState(cur.belt), won = after.complete && !beltBefore.complete, nb = BELTS[cur.belt + 1];
     const title = won ? `¡Conseguiste el ${B.name.toLowerCase()}! 🥋` : `${B.name}: ${after.done} de ${after.total}`;
@@ -2045,6 +2096,7 @@ function paidWithoutSession() {
 // Another layout of the same page (nueva.html → nueva.js) drives the app through these, and gets told of its moves
 // through window.tnLayout (start, quiz, cog, home). index.html sets no layout, so nothing changes there.
 window.tnApp = { start, startQuiz, goHome, goCog, nextLesson, drawChart, fcol, LESSONS, GROUPS, BELTS, beltState, currentBelt, state: S, NINJA_HASH,
+  TN_BELTS, tnBeltOf, tnBeltState, tnNum,
   key: k => MAP[k], mode: () => mode, chartShown: () => evoView === 'chart',
   userName: () => auth.name ? shownName() : null, bestPpm: () => Math.max(0, S.test?.ppm || 0, ...S.tests.map(t => t.ppm)) || null,
   bestIq: () => S.ninja.best?.iq || null, tierName: ppm => TIERS[tierFor(ppm)].name,
