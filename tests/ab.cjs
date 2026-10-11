@@ -31,7 +31,8 @@ const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KH
   const rw = await middleware(new Request('https://www.temploninja.com/?utm_source=meta&fbclid=abc#x', { headers: { cookie: 'tn_home=nueva', 'user-agent': iphone } }));
   check('The new home is a rewrite of the same address, with its parameters', rw.headers.get('x-middleware-rewrite') === 'https://www.temploninja.com/nueva.html?utm_source=meta&fbclid=abc' && !rw.headers.get('location') && rw.headers.get('cache-control') === 'private, no-cache');
   const nx = await middleware(new Request('https://www.temploninja.com/', { headers: { 'user-agent': iphone } }));
-  check('The current home goes on as is (and a new visitor gets the cookie)', nx.headers.get('x-middleware-next') === '1' && /^tn_home=(nueva|actual);/.test(nx.headers.get('set-cookie')) && (nx.headers.get('set-cookie').startsWith('tn_home=actual') || !!nx.headers.get('x-middleware-rewrite')));
+  const nxCookie = nx.headers.get('set-cookie') || '', nxNew = !!nx.headers.get('x-middleware-rewrite'); // a new visitor lands on either home
+  check('A new visitor gets a cookie, and the current home goes on as is', nxNew ? nxCookie.startsWith('tn_home=nueva;') : nx.headers.get('x-middleware-next') === '1' && nxCookie.startsWith('tn_home=actual;'));
   const post = await middleware(new Request('https://www.temploninja.com/', { method: 'POST' }));
   check('Anything but GET passes through untouched', post.headers.get('x-middleware-next') === '1' && !post.headers.get('set-cookie'));
 

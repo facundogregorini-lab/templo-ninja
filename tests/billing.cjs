@@ -110,6 +110,9 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('The server sends the same ViewContent, with the same event id', view[3]?.eventID && viewSent?.event_id === view[3].eventID && viewSent.custom_data.content_category === 'limit');
     check('The server ViewContent carries what Meta matches people with', viewSent.user_data.external_id[0] === hash(guestAnon) && viewSent.user_data.client_ip_address === '127.0.0.1'
       && viewSent.user_data.client_user_agent && viewSent.user_data.fbp === 'fb.1.1700000000000.42' && /\.clickGuest1$/.test(viewSent.user_data.fbc) && viewSent.event_source_url === SITE + '/');
+    check('ViewContent carries the price for Meta (pixel and server), as its ad sets optimize for it', view[2].value === 4900 && view[2].currency === 'ARS'
+      && viewSent.custom_data.value === 4900 && viewSent.custom_data.currency === 'ARS');
+    check('…but the Google Ads conversion for seeing the prices stays without value', conv(guest, 'Prec1abc').every(c => c.value === undefined));
     check('Only the page\'s own events can be sent through /api/track', (await fetch(SITE + '/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'Purchase', event_id: 'ev_12345678' }) })).status === 400);
     await guest.click('#planClose'); await guest.reload(); await guest.waitForSelector('#planNote:not([hidden])');
     check('Reloading does not reset the daily limit', (await guest.textContent('#planNote')).includes('ya usaste'));
