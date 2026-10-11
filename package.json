@@ -5,7 +5,8 @@
   "description": "Templo Ninja: Teclado Ciego (escribir sin mirar) y Ninja mental (tests de entrevistas), con cuentas, ranking y desafíos",
   "scripts": {
     "dev": "node tests/server.cjs",
-    "test": "node tests/dojo.cjs && node tests/smoke.cjs && node tests/billing.cjs && node tests/feedback.cjs && node tests/admin.cjs && node tests/nueva.cjs && node tests/redesign.cjs",
+    "test": "node tests/dojo.cjs && node tests/smoke.cjs && node tests/billing.cjs && node tests/feedback.cjs && node tests/admin.cjs && node tests/nueva.cjs && node tests/redesign.cjs && node tests/ab.cjs",
+    "test:ab": "node tests/ab.cjs",
     "test:redesign": "node tests/redesign.cjs",
     "test:nueva": "node tests/nueva.cjs",
     "test:billing": "node tests/billing.cjs",
@@ -14,6 +15,7 @@
     "test:admin": "node tests/admin.cjs"
   },
   "dependencies": {
+    "@vercel/functions": "^3.9.11",
     "redis": "^4.7.1"
   },
   "devDependencies": {

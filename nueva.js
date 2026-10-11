@@ -396,7 +396,7 @@
   // The bridge from the phone: learning with ten fingers needs a physical keyboard, so the phone offers a
   // typing challenge of its own (its own history, not the course's), saving the course for the computer, and
   // Ninja mental, which works fine on a phone. "Tengo teclado físico" turns it off.
-  const courseLink = () => `${location.origin}${location.pathname}?desde=celu#teclado`;
+  const courseLink = () => `${location.origin}/nueva?desde=celu#teclado`; // /nueva, not "/": there the A/B test may show the current home
   const SAVE_TEXT = 'Mi curso de Templo Ninja para aprender a escribir sin mirar el teclado (para seguir en la compu):';
   function renderBridge() {
     const on = touchOnly();
