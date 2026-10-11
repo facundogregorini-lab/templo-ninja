@@ -137,27 +137,10 @@ async function status(name, { forceRefresh = false } = {}) {
   return { premium: Boolean(sub && sub.paidUntil > Date.now()), sub };
 }
 
-// Pricing experiment "precio-oferta-24h" (PostHog): in the test variant each account gets the price as a 24-hour offer
-// that starts the first time it sees the prices; once it ends, that account pays the regular price (MP_REGULAR_PRICE).
-// offer:<name> = { variant, start } is written once (SET NX), so the countdown is the same on every device and visit.
-const OFFER_MS = 24 * 3600e3, OFFER_VARIANTS = ['control', 'test'];
-const offerKey = name => 'offer:' + name;
-const regularPrice = () => Number(env('MP_REGULAR_PRICE')) || 9900;
-const readOffer = async name => JSON.parse(await redis('GET', offerKey(name)) || 'null');
-// The page sends the variant PostHog gave it and, for a guest who saw the offer before signing in, when it started
-// (no earlier than 7 days ago, never in the future). The first one stored stays.
-async function startOffer(name, variant, start) {
-  if (!OFFER_VARIANTS.includes(variant)) return readOffer(name);
-  const now = Date.now(), at = Math.min(now, Math.max(now - 7 * 864e5, Math.round(Number(start)) || now));
-  await redis('SET', offerKey(name), JSON.stringify({ variant, start: at }), 'NX');
-  return readOffer(name);
-}
-// What this account pays today, and its offer for the page (null when it has none).
-async function priceFor(name) {
-  const s = settings(), offer = await readOffer(name);
-  if (offer?.variant !== 'test') return { amount: s.price, offer: offer && { variant: offer.variant } };
-  const endsAt = offer.start + OFFER_MS, active = Date.now() < endsAt;
-  return { amount: active ? s.price : regularPrice(), offer: { variant: 'test', endsAt, active, regular: regularPrice() } };
+// The pricing experiment "precio-oferta-24h" ended on 2026-10-11 with no winner: everyone pays the base price again.
+// Leftover offer:<name> keys in Redis are no longer read.
+async function priceFor() {
+  return { amount: settings().price, offer: null };
 }
 const priceLabel = amount => '$ ' + Number(amount).toLocaleString('es-AR') + ' · pago único';
 
@@ -165,4 +148,4 @@ async function isPremium(name) {
   return !settings().enabled || (await status(name)).premium;
 }
 
-module.exports = { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, OFFER_MS, settings, today, playsKey, mp, storeSubscription, storePayment, status, isPremium, startOffer, priceFor, priceLabel, regularPrice };
+module.exports = { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, today, playsKey, mp, storeSubscription, storePayment, status, isPremium, priceFor, priceLabel };

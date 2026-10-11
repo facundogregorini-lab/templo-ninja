@@ -1102,36 +1102,10 @@ function qFigure(q, cls = 'fig') {
   return '';
 }
 const optHtml = (q, o) => q.text ? `<span class="opt-txt">${escHtml(o)}</span>` : Figures.draw(o);
-/* ---------- Experiment: the "iq" ad goes straight to the 5-minute challenge, with the offer next to the IQ ----------
-   Only visitors who came from that ad (utm_content=iq, remembered in this browser) are in it. The PostHog flag
-   iq-desafio-directo splits them 50/50: "control" sees Ninja mental as always; "test" gets "Medí tu IQ ninja" as the
-   main button and, under the result, the unlimited plan. The IQ itself stays free. Asked after this script runs. */
-var IQ_FLAG = 'iq-desafio-directo', iqVariant = null;
+/* The experiment iq-desafio-directo (the "iq" ad straight to the 5-minute challenge, with the offer under the result)
+   ended on 2026-10-11 keeping the original version: Ninja mental as always. iqTest() stays false. */
+var iqVariant = null;
 function iqTest() { return iqVariant === 'test'; }
-queueMicrotask(() => {
-  const KEY = 'teclado-ciego-iq-exp';
-  let inExp = new URLSearchParams(location.search).get('utm_content') === 'iq';
-  try { if (inExp) localStorage.setItem(KEY, '1'); else inExp = localStorage.getItem(KEY) === '1'; } catch {}
-  if (inExp) window.tn?.flag?.(IQ_FLAG, v => {
-    if (iqVariant) return; // flags can reload: one variant and one activation per page
-    iqVariant = v === 'test' ? 'test' : 'control';
-    if (iqTest()) renderCog();
-    iqActivateOnRealUse();
-  });
-});
-// The experiment counts only people: Instagram/Facebook preload the ad's page and Meta's review robot opens it,
-// and both run this script without anyone looking. So the analysis requires iq_exp_activated, sent with the first
-// tap, click, swipe or mouse wheel while the page is visible (PostHog: exposure criteria → activation event).
-// Not "scroll": the page itself scrolls to Ninja mental on arrival.
-function iqActivateOnRealUse() {
-  const kinds = ['pointerdown', 'touchstart', 'wheel'];
-  const go = () => {
-    if (document.visibilityState !== 'visible') return;
-    kinds.forEach(k => removeEventListener(k, go, true));
-    tn.capture('iq_exp_activated', { variant: iqVariant, ['$feature/' + IQ_FLAG]: iqVariant });
-  };
-  kinds.forEach(k => addEventListener(k, go, { capture: true, passive: true }));
-}
 // The offer under the challenge's result (test variant, payments on, not unlimited yet).
 function iqOffer() {
   if (!iqTest() || !billing.enabled || billing.premium) return '';
@@ -1581,7 +1555,6 @@ function guestPlays() { try { const p = JSON.parse(localStorage.getItem(PLAYS_KE
 const usedToday = () => auth.name ? billing.plays : guestPlays();
 async function loadBilling(sync) {
   try { Object.assign(billing, await api('billing', sync ? { action: 'sync' } : undefined)); } catch {}
-  await syncOffer(); // a guest who saw the 24-hour offer and then signed in keeps the same countdown
   await startPixel(billing.pixel); // before any event of this page, like the Purchase coming back from paying
   startGoogleTag(billing.gads);
   if (billing.enabled) tn.people({ plan: billing.premium ? 'ilimitado' : 'gratis' });
@@ -1721,7 +1694,7 @@ function showPlan(reason) {
   // On a computer, also the phone: that is where most people have Mercado Pago open (the first purchase was paid that way).
   $('planPhone').hidden = !(canBuy && auth.name && matchMedia('(hover: hover) and (pointer: fine)').matches);
   $('planQrBox').hidden = true; stopQrWatch();
-  renderOffer(); pricingTest();
+  $('planOffer').hidden = true; // the 24-hour offer (precio-oferta-24h) ended: the base price for everyone
   if (!$('planDlg').open) $('planDlg').showModal();
 }
 function renderPlan() {
@@ -1736,64 +1709,10 @@ function renderPlan() {
 $('upgrade').onclick = () => { $('acctDlg').close(); showPlan('upgrade'); };
 $('upgradeCta').onclick = () => showPlan('upgrade');
 $('planClose').onclick = () => $('planDlg').close();
-$('planDlg').addEventListener('close', () => { stopQrWatch(); clearInterval(offerTick); });
+$('planDlg').addEventListener('close', stopQrWatch);
 
-/* Pricing experiment "precio-oferta-24h" (PostHog, 50/50, every visitor who sees the prices). In "test" the price is
-   a 24-hour offer: the regular price struck through, the countdown, and once it ends that account pays the regular
-   price (api/_billing.js decides the amount; this only shows it). The countdown starts the first time the prices show
-   and is kept: in the account (server) or, for a guest, in this browser until they sign in. Asking for the flag only
-   here, when the plan opens, is what counts someone as exposed. */
-const OFFER_FLAG = 'precio-oferta-24h', OFFER_KEY = 'tn-oferta-24h', OFFER_MS = 24 * 36e5;
-let offerVariant = null, offerTick = null;
-const guestOfferStart = create => {
-  try {
-    const n = Number(localStorage.getItem(OFFER_KEY));
-    if (n > 0) return n;
-    if (create) { localStorage.setItem(OFFER_KEY, String(Date.now())); return Date.now(); }
-  } catch {}
-  return create ? Date.now() : null;
-};
-function pricingTest() {
-  if (!billing.enabled || billing.premium) return;
-  tn.flag(OFFER_FLAG, async v => {
-    if (v !== 'test' && v !== 'control') return;
-    const first = !offerVariant; offerVariant = v;
-    if (v === 'test' && !auth.name) guestOfferStart(true);
-    await syncOffer();
-    renderOffer();
-    if (first) { const o = offerState(); tn.capture('price_offer_seen', { variant: v, active: o ? o.active : null, minutes_left: o?.active ? Math.round((o.endsAt - Date.now()) / 6e4) : null, logged_in: !!auth.name }); }
-  });
-}
-// The account keeps its variant (and, coming from a guest visit, when the offer started); the first one stored stays.
-async function syncOffer() {
-  if (!auth.name || !offerVariant || billing.offer || !billing.enabled) return;
-  try { Object.assign(billing, await api('billing', { action: 'offer', variant: offerVariant, start: offerVariant === 'test' ? guestOfferStart(false) : undefined })); } catch {}
-}
-function offerState() {
-  if (offerVariant !== 'test' || !billing.enabled || billing.premium) return null;
-  const endsAt = auth.name ? billing.offer?.endsAt : guestOfferStart(false) + OFFER_MS;
-  return endsAt ? { endsAt, active: Date.now() < endsAt, regular: billing.offer?.regular || billing.regular || 9900 } : null;
-}
-const money = n => '$ ' + Number(n).toLocaleString('es-AR');
-function renderOffer() {
-  clearInterval(offerTick);
-  const o = offerState(), base = billing.amount;
-  $('planOffer').hidden = !o?.active;
-  $('planPrice').hidden = !billing.enabled || !!o?.active;
-  if (!o) return;
-  if (!o.active) { $('planPrice').textContent = money(o.regular) + ' · pago único'; return; } // the offer ended: the regular price
-  $('planEyebrow').textContent = '🎉 PRECIO DE LANZAMIENTO';
-  $('offerOld').textContent = money(o.regular);
-  $('offerSave').textContent = 'Ahorrás ' + money(o.regular - base);
-  $('offerNew').innerHTML = escHtml(money(base)) + '<small>pago único</small>';
-  $('offerNote').textContent = `Este precio es para vos. Cuando termina el reloj, el acceso ilimitado pasa a ${money(o.regular)}. Sin suscripción ni débitos.`;
-  const tick = () => {
-    const left = Math.max(0, o.endsAt - Date.now()), pad = n => String(n).padStart(2, '0');
-    $('cdH').textContent = pad(Math.floor(left / 36e5)); $('cdM').textContent = pad(Math.floor(left / 6e4) % 60); $('cdS').textContent = pad(Math.floor(left / 1e3) % 60);
-    if (!left) { clearInterval(offerTick); (auth.name ? loadBilling() : Promise.resolve()).then(renderOffer); }
-  };
-  tick(); offerTick = setInterval(tick, 1000);
-}
+/* The pricing experiment "precio-oferta-24h" (a 24-hour offer, then $9.900) ended on 2026-10-11 with no winner: the
+   base price for everyone again (api/_billing.js), also for the accounts that saw the offer. */
 // Free account from the plan: the guest keeps practicing today with the account's practices.
 function signupFromPlan(mode) {
   signupFrom = 'plan'; tn.capture('signup_prompt_clicked', { mode, used_today: usedToday() });

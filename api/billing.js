@@ -1,9 +1,8 @@
 // GET: plan info (public part + the user's plan when logged in)
 // POST { action: 'play' }: counts one of today's free practices (FREE_ACCOUNT_PER_DAY for accounts) · { action: 'buy' }: Mercado Pago checkout for the
-// one-time payment · { action: 'sync' }: asks Mercado Pago again (coming back from paying) · { action: 'offer', variant, start }:
-// the account's variant of the pricing experiment (and when its 24-hour offer started), stored once
+// one-time payment · { action: 'sync' }: asks Mercado Pago again (coming back from paying)
 const { redis, HttpError, requireUser, bearer, body, handler } = require('./_lib');
-const { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, playsKey, mp, status, startOffer, priceFor, priceLabel, regularPrice } = require('./_billing');
+const { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, playsKey, mp, status, priceFor, priceLabel } = require('./_billing');
 const { metaSettings, purchaseId, clientContext, saveContext, sendEvent } = require('./_meta');
 const { googleSettings } = require('./_google');
 
@@ -11,7 +10,7 @@ async function userInfo(name, options) {
   const s = settings();
   const { premium, paid, sub, gift } = await status(name, options);
   const plays = Number(await redis('GET', playsKey(name))) || 0;
-  const { amount, offer } = await priceFor(name); // the experiment's price for this account (the base one otherwise)
+  const { amount, offer } = await priceFor(name);
   return { premium, plays, amount, price: amount === s.price ? s.label : priceLabel(amount), offer, freePerDay: FREE_ACCOUNT_PER_DAY, gift: Boolean(gift), lifetime: Boolean(paid), subscription: sub && { status: sub.status, paidUntil: sub.paidUntil },
     // For the page's Purchase event: same id as the one the server reports, so Meta counts it once
     purchase: paid ? { id: purchaseId(paid.id), value: paid.amount, currency: paid.currency || s.currency } : null };
@@ -19,7 +18,7 @@ async function userInfo(name, options) {
 
 module.exports = handler(async req => {
   const s = settings();
-  const base = { enabled: s.enabled, price: s.label, amount: s.price, regular: regularPrice(), currency: s.currency, freePerDay: FREE_PER_DAY, guestPerDay: FREE_PER_DAY, accountPerDay: FREE_ACCOUNT_PER_DAY, pixel: metaSettings().pixel, gads: googleSettings() };
+  const base = { enabled: s.enabled, price: s.label, amount: s.price, currency: s.currency, freePerDay: FREE_PER_DAY, guestPerDay: FREE_PER_DAY, accountPerDay: FREE_ACCOUNT_PER_DAY, pixel: metaSettings().pixel, gads: googleSettings() };
 
   if (req.method === 'GET') {
     if (!bearer(req)) return base;
@@ -37,14 +36,14 @@ module.exports = handler(async req => {
     return { ok: true, plays: count };
   }
 
-  if (data.action === 'offer') { await startOffer(name, String(data.variant || ''), data.start); return { ...base, ...await userInfo(name) }; }
+  if (data.action === 'offer') return { ...base, ...await userInfo(name) }; // the pricing experiment ended; old pages may still send it
 
   if (data.action === 'sync') return { ...base, ...await userInfo(name, { forceRefresh: true }) };
 
   if (data.action === 'buy') {
     if (!s.enabled) throw new HttpError(503, 'Los pagos todavía no están configurados.');
     if ((await status(name)).premium) throw new HttpError(409, 'Ya tenés acceso ilimitado. ¡Gracias por tu aporte!');
-    const { amount } = await priceFor(name); // 4.900, or the regular price once a test account's offer ended
+    const { amount } = await priceFor(name);
     const origin = process.env.APP_URL || 'https://' + req.headers.host;
     // Meta's browser ids (and the IP) are kept for the Purchase the server reports later, maybe from the webhook (api/_meta.js)
     const ctx = clientContext(req, data.track);
