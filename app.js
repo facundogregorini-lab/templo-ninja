@@ -1191,9 +1191,14 @@ function setTrack(tr) {
 document.querySelectorAll('#cogTracks button').forEach(b => b.onclick = () => setTrack(b.dataset.v));
 // Ninja mental is the second section of the home page: going there is going home and scrolling to it.
 function goCog() {
+  const hash = location.hash;
   goHome();
+  if (window.tnLayout?.cog) { // /nueva sets its own address (a new entry when the person asked for it): keep the one it had
+    if (location.hash !== hash) window.history.replaceState(window.history.state, '', location.pathname + location.search + hash);
+    return window.tnLayout.cog();
+  }
   if (location.hash !== '#ninja') window.history.replaceState(null, '', location.pathname + location.search + '#ninja');
-  if (window.tnLayout?.cog) window.tnLayout.cog(); else $('cog').scrollIntoView({ block: 'start' });
+  $('cog').scrollIntoView({ block: 'start' });
 }
 
 let quiz = null;
@@ -2095,6 +2100,8 @@ function paidWithoutSession() {
 }
 // Another layout of the same page (nueva.html → nueva.js) drives the app through these, and gets told of its moves
 // through window.tnLayout (start, quiz, cog, home). index.html sets no layout, so nothing changes there.
+// Which home the person uses, for the links back to the app on the other pages (precios, términos, /profesional…)
+try { localStorage.setItem('tn-home', window.tnLayout ? '/nueva' : '/'); } catch {}
 window.tnApp = { start, startQuiz, goHome, goCog, nextLesson, drawChart, fcol, LESSONS, GROUPS, BELTS, beltState, currentBelt, state: S, NINJA_HASH,
   TN_BELTS, tnBeltOf, tnBeltState, tnNum,
   key: k => MAP[k], mode: () => mode, chartShown: () => evoView === 'chart',
