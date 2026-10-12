@@ -14,7 +14,10 @@ async function userInfo(name, options) {
   const { premium, paid, sub, gift } = await status(name, options);
   const plays = Number(await redis('GET', playsKey(name))) || 0;
   const { amount, offer } = await priceFor(name);
-  return { premium, plays, amount, price: amount === s.price ? s.label : priceLabel(amount), offer, freePerDay: FREE_ACCOUNT_PER_DAY, gift: Boolean(gift), lifetime: Boolean(paid), subscription: sub && { status: sub.status, paidUntil: sub.paidUntil },
+  // Extra practices gifted by the follow-up email (api/cron.js): used once today's free ones run out, so today's
+  // limit is what was used or the free ones, whichever is more, plus what is left of the gift.
+  const bonus = Math.max(0, Number(await redis('GET', 'bonus:' + name)) || 0);
+  return { premium, plays, amount, price: amount === s.price ? s.label : priceLabel(amount), offer, freePerDay: Math.max(plays, FREE_ACCOUNT_PER_DAY) + bonus, bonus, gift: Boolean(gift), lifetime: Boolean(paid), subscription: sub && { status: sub.status, paidUntil: sub.paidUntil },
     // For the page's Purchase event: same id as the one the server reports, so Meta counts it once
     purchase: paid ? { id: purchaseId(paid.id), value: paid.amount, currency: paid.currency || s.currency } : null };
 }
@@ -94,7 +97,16 @@ module.exports = handler(async req => {
     if (!s.enabled || (await status(name)).premium) return { ok: true };
     const count = await redis('INCR', playsKey(name));
     if (count === 1) await redis('EXPIRE', playsKey(name), 2 * 86400);
-    if (count > FREE_ACCOUNT_PER_DAY) throw new HttpError(402, `Ya usaste tus ${FREE_ACCOUNT_PER_DAY} prácticas gratis de hoy.`);
+    // Reaching the daily limit puts the account in the follow-ups for people who hit it (api/cron.js).
+    if (count >= FREE_ACCOUNT_PER_DAY) await redis('SET', 'hitlimit:' + name, String(Date.now()), 'NX');
+    if (count > FREE_ACCOUNT_PER_DAY) {
+      // Past today's free ones: one of the gifted extra practices, if any are left.
+      const left = Number(await redis('GET', 'bonus:' + name)) || 0;
+      if (left <= 0) throw new HttpError(402, `Ya usaste tus ${FREE_ACCOUNT_PER_DAY} prácticas gratis de hoy.`);
+      const after = Number(await redis('DECR', 'bonus:' + name)); // keeps the gift's expiry
+      if (after < 0) { await redis('SET', 'bonus:' + name, '0', 'KEEPTTL'); throw new HttpError(402, `Ya usaste tus ${FREE_ACCOUNT_PER_DAY} prácticas gratis de hoy.`); }
+      return { ok: true, plays: count, bonus: after };
+    }
     return { ok: true, plays: count };
   }
 

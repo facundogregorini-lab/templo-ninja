@@ -120,22 +120,31 @@ async function sendSignInLink(name, email) {
   return send({ to: email, subject: 'Tu link para entrar a Templo Ninja', html, text, name, kind: 'link' });
 }
 
-// The follow-ups of api/cron.js. "offer" is { amount, until } when it brings a price for a few hours.
-async function sendFollowUp(name, email, step, offer) {
+// The follow-ups of api/cron.js, by what the person did:
+//   recordatorio: signed up and never hit the daily limit · regalo: hit it and didn't pay, gets extra practices
+//   (extra = { count, until }) · oferta: hit it, got the gift, still away: the price for a few hours (extra = { amount, regular, until, hours }).
+async function sendFollowUp(name, email, step, extra = {}) {
   const url = await signInLink(name, step);
   const price = n => '$ ' + Number(n).toLocaleString('es-AR');
   // Day and time in Argentina (UTC-3, no daylight saving): "14/10" and "11:00".
-  const ar = offer && new Date(offer.until - 3 * 3600e3).toISOString(), day = ar && ar.slice(8, 10) + '/' + ar.slice(5, 7), time = ar && ar.slice(11, 16);
+  const ar = extra.until && new Date(extra.until - 3 * 3600e3).toISOString(), day = ar && ar.slice(8, 10) + '/' + ar.slice(5, 7), time = ar && ar.slice(11, 16);
   const content = step === 'recordatorio' ? {
     subject: 'Tu práctica de hoy te espera 🥷',
     title: 'Diez minutos y volvés en forma',
     paragraphs: ['Las pruebas de las entrevistas premian la práctica: cada sesión trae la técnica para resolverla y la explicación de cada respuesta.',
       'Hoy tenés tus prácticas gratis listas. Entrá directo, sin contraseña.'],
     button: 'Seguir entrenando',
+  } : step === 'regalo' ? {
+    subject: `Te regalamos ${extra.count} prácticas extra 🎁`,
+    title: `${extra.count} prácticas extra, de regalo`,
+    paragraphs: ['La última vez llegaste al límite de prácticas gratis del día. Para que sigas entrenando, te sumamos ' + extra.count + ' prácticas extra a tu cuenta.',
+      'Se usan cuando terminás las del día: así podés hacer una sesión larga antes de tu próxima entrevista.'],
+    button: 'Usar mis prácticas extra',
+    after: [`Las prácticas extra valen hasta el ${day}.`],
   } : {
-    subject: `Acceso ilimitado a ${price(offer.amount)} hasta el ${day}`,
-    title: `Entrená sin límites a ${price(offer.amount)}`,
-    paragraphs: [`Por 48 horas, el acceso ilimitado para siempre te sale ${price(offer.amount)} en vez de ${price(offer.regular)}: un solo pago, sin suscripción.`,
+    subject: `${Math.round(100 - extra.amount / extra.regular * 100)}% off por ${extra.hours} horas: acceso ilimitado a ${price(extra.amount)}`,
+    title: `Entrená sin límites a ${price(extra.amount)}`,
+    paragraphs: [`Solo para vos y por ${extra.hours} horas: el acceso ilimitado para siempre a ${price(extra.amount)} en vez de ${price(extra.regular)}. Un solo pago, sin suscripción.`,
       'Simulacros de entrevista, tests por empresa, lecciones y desafíos sin tope diario. Y si no te sirve, te devolvemos todo dentro de los 14 días.'],
     button: 'Ver mi precio',
     after: [`El precio vale hasta el ${day} a las ${time} (hora de Argentina).`],

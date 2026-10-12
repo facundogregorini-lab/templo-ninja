@@ -64,29 +64,47 @@ async function idle(name, days) {
     check('asking again right away sends nothing more', mails.length === 2);
     check('PostHog hears that an email went out, never the address', ph.some(e => e.event === 'email_sent' && e.distinct_id === 'ana') && !ph.some(e => JSON.stringify(e).includes('example.com')));
 
-    // The daily job
+    // The daily job: two paths, by whether the account hit the daily free limit
     check('the job needs Vercel\'s secret', (await api('cron')).status === 401);
     const cami = await api('auth', { action: 'register', email: 'cami@example.com', password: 'secreto1' });
     const dani = await api('auth', { action: 'register', email: 'dani@example.com', password: 'secreto1' });
-    await idle('ana', 1); await idle('cami', 4); await idle('dani', 8);
-    const dry = await cron('?dry=1');
-    const step = n => dry.due.find(d => d.name === n)?.step;
-    check('who comes back is left alone; 3 days away gets the reminder; 7 days away gets the offer', !step('ana') && step('cami') === 'recordatorio' && step('dani') === 'oferta' && !JSON.stringify(dry).includes('@'));
-    const before = mails.length, run = await cron();
-    const sentNow = mails.slice(before), remind = sentNow.find(m => m.to[0] === 'cami@example.com'), offer = sentNow.find(m => m.to[0] === 'dani@example.com');
-    check('the job sends both', run.sent === 2 && remind?.tags[0].value === 'recordatorio' && offer?.tags[0].value === 'oferta');
+    for (let i = 0; i < 10; i++) await api('billing', { action: 'play' }, dani.token); // dani uses up today's free practices
+    check('using up the free practices marks the account', Boolean(await redis('GET', 'hitlimit:dani')) && !await redis('GET', 'hitlimit:cami'));
+    await idle('ana', 1); await idle('cami', 4); await idle('dani', 3);
+    let dry = await cron('?dry=1');
+    const due = (d, n) => d.due.find(x => x.name === n);
+    check('who comes back is left alone; never at the limit and 3 days away: a reminder; at the limit and 2 days away: a gift',
+      !due(dry, 'ana') && due(dry, 'cami')?.step === 'recordatorio' && due(dry, 'cami').segment === 'no_llego_al_limite'
+      && due(dry, 'dani')?.step === 'regalo' && due(dry, 'dani').segment === 'llego_al_limite' && !JSON.stringify(dry).includes('@'));
+    let before = mails.length, run = await cron();
+    const remind = mails.slice(before).find(m => m.to[0] === 'cami@example.com'), gift = mails.slice(before).find(m => m.to[0] === 'dani@example.com');
+    check('the job sends both', run.sent === 2 && remind?.tags[0].value === 'recordatorio' && gift?.tags[0].value === 'regalo');
     check('follow-ups carry a one-click unsubscribe and a sign-in link', remind.headers['List-Unsubscribe'].includes('/api/email?baja=cami') && remind.headers['List-Unsubscribe-Post'] && tokenIn(remind) && remind.html.includes('No quiero recibir'));
-    check('the offer says the price, the regular one and until when', offer.subject.includes('$ 3.900') && offer.text.includes('$ 4.900') && /hasta el \d\d\/\d\d a las \d\d:\d\d/.test(offer.text));
-    check('each email goes once', (await cron()).sent === 0);
+    check('the gift says how many extra practices and until when', gift.subject.includes('15 prácticas extra') && /valen hasta el \d\d\/\d\d/.test(gift.text));
 
-    // The offer's price is real: shown to that account and charged
+    // The gift is real: past today's free practices, 15 more
     const daniPlan = await api('billing', undefined, dani.token);
-    check('the account sees its offer price, until a date', daniPlan.amount === 3900 && daniPlan.offer?.regular === 4900 && daniPlan.offer.until > Date.now());
+    check('the account sees its extra practices in today\'s limit', daniPlan.bonus === 15 && daniPlan.freePerDay === 25 && daniPlan.plays === 10);
+    const codes = []; for (let i = 0; i < 16; i++) codes.push((await api('billing', { action: 'play' }, dani.token)).status);
+    check('15 extra practices, then the limit again', codes.join() === '200,'.repeat(15) + '402' && (await api('billing', undefined, dani.token)).bonus === 0);
+    check('the reminder is not sent twice, and the gift is not the offer yet', (await cron()).sent === 0);
+
+    // Still away after the gift: half price for 48 hours
+    await idle('dani', 8);
+    dry = await cron('?dry=1');
+    check('at the limit, gifted and 7 days away: the offer', due(dry, 'dani')?.step === 'oferta' && !due(dry, 'cami'));
+    before = mails.length; run = await cron();
+    const offer = mails.slice(before).find(m => m.to[0] === 'dani@example.com');
+    check('the offer is half price for 48 hours, saying until when', run.sent === 1 && offer.subject.startsWith('50% off por 48 horas') && offer.subject.includes('$ 2.450') && offer.text.includes('$ 4.900') && /hasta el \d\d\/\d\d a las \d\d:\d\d/.test(offer.text));
+    check('each email goes once', (await cron()).sent === 0);
+    const offerPlan = await api('billing', undefined, dani.token);
+    check('the account sees its offer price, until a date', offerPlan.amount === 2450 && offerPlan.offer?.regular === 4900 && offerPlan.offer.until > Date.now());
     check('other accounts keep the usual price', (await api('billing', undefined, cami.token)).amount === 4900);
     await api('billing', { action: 'buy' }, dani.token);
-    check('Mercado Pago charges the offer price', prefs.at(-1).items[0].unit_price === 3900 && prefs.at(-1).external_reference === 'dani');
-    await redis('SET', 'promo:dani', JSON.stringify({ amount: 3900, until: Date.now() - 1000 }));
+    check('Mercado Pago charges the offer price', prefs.at(-1).items[0].unit_price === 2450 && prefs.at(-1).external_reference === 'dani');
+    await redis('SET', 'promo:dani', JSON.stringify({ amount: 2450, until: Date.now() - 1000 }));
     check('once the offer ends, the usual price is back', (await api('billing', undefined, dani.token)).amount === 4900);
+    check('an account that never hit the limit never gets a discount', !mails.some(m => m.to[0] === 'cami@example.com' && m.tags[0].value !== 'recordatorio' && m.tags[0].value !== 'bienvenida'));
 
     // Unsubscribe and who is never written to
     const unsubUrl = remind.headers['List-Unsubscribe'].slice(1, -1).replace('https://www.temploninja.com', SITE);
@@ -94,7 +112,8 @@ async function idle(name, days) {
     const page = await fetch(unsubUrl.replace(/^.*\/api\//, SITE + '/api/'));
     check('the unsubscribe link works and says so', page.status === 200 && (await page.text()).includes('no te escribimos más') && await redis('GET', 'nomail:cami'));
     await redis('SET', 'mailsent:cami', JSON.stringify({ recordatorio: 1 })); await idle('cami', 10);
-    check('after unsubscribing, no more follow-ups (not even the offer)', !(await cron('?dry=1')).due.some(d => d.name === 'cami'));
+    await redis('SET', 'hitlimit:cami', '1');
+    check('after unsubscribing, no more follow-ups (not even the gift)', !(await cron('?dry=1')).due.some(d => d.name === 'cami'));
     const eva = await api('auth', { action: 'register', email: 'eva@example.com', password: 'secreto1' });
     await redis('SET', 'paid:eva', JSON.stringify({ id: 1, amount: 4900 })); await idle('eva', 9);
     check('unlimited accounts get no follow-ups', eva.status === 200 && !(await cron('?dry=1')).due.some(d => d.name === 'eva'));

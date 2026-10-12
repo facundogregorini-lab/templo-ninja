@@ -1697,7 +1697,7 @@ function renderPlanNote() {
   if ($('dojoCount').dataset.ready) renderDojo(); // the plan's meter also shows when the free practices run out
   if (note.hidden) return;
   const left = Math.max(0, billing.freePerDay - usedToday());
-  note.innerHTML = `Plan gratis: ${left ? `te ${left === 1 ? 'queda 1 práctica' : `quedan ${left} prácticas`} de ${billing.freePerDay} hoy` : 'ya usaste tus prácticas de hoy'} · <button type="button">Acceso ilimitado</button>`;
+  note.innerHTML = `Plan gratis: ${left ? `te ${left === 1 ? 'queda 1 práctica' : `quedan ${left} prácticas`} de ${billing.freePerDay} hoy` : 'ya usaste tus prácticas de hoy'}${auth.name && billing.bonus > 0 ? ' (con tus extra de regalo 🎁)' : ''} · <button type="button">Acceso ilimitado</button>`;
   note.querySelector('button').onclick = () => showPlan('upgrade');
 }
 // What a practice is, for the analytics events (no personal data).
