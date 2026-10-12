@@ -883,10 +883,13 @@ function renderAccountBtn() {
 }
 async function signedIn(token, name, display) {
   auth = { token, name, display: display || name };
-  tn.identify(name); // the username is the account id (no email is ever asked for)
+  tn.identify(name); // the username is the account id (the email never goes to analytics)
   try { localStorage.setItem(TOKEN, token); } catch {}
   renderAccountBtn();
   try { await loadAccount(); } catch (err) { toast(err.message); }
+  // A payment made in this browser before having an account (or before signing in here): it goes to this account.
+  const claim = q0Claim() || storedClaim();
+  if (claim) try { const r = await api('billing', { action: 'claim', claim }); if (r.claimed) { forgetClaim(); tn.capture('purchase_claimed', { via: 'session' }); } } catch {}
   const q = new URLSearchParams(location.search), back = q.get('aporte') || q.get('suscripcion'); // suscripcion: monthly plan, from before
   await loadBilling(Boolean(back)); // asks Mercado Pago again: the payment may have been made elsewhere (another tab, the phone)
   if (back) {
@@ -897,7 +900,7 @@ async function signedIn(token, name, display) {
     if (billing.premium) trackPurchase();
     else if (back !== 'ok') tn.capture('payment_failed', { status: back });
     else tn.capture('payment_pending');
-    toast(billing.premium ? '¡Gracias por tu aporte! Los monjes ninja te lo agradecen 🙏 Ya tenés acceso ilimitado ✦'
+    toast(billing.premium ? '¡Listo! Ya tenés acceso ilimitado ✦ Los monjes ninja te lo agradecen 🙏'
       : back !== 'ok' ? 'El pago no se completó. Podés intentarlo de nuevo cuando quieras.'
       : 'Estamos esperando la confirmación de Mercado Pago. Puede tardar unos minutos.');
   }
@@ -919,9 +922,14 @@ function setAuthMode(m) {
   $('authTitle').textContent = m === 'login' ? 'Entrá a tu cuenta' : 'Creá tu cuenta';
   $('authSubmit').textContent = m === 'login' ? 'Entrar' : 'Crear cuenta';
   $('pass').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  // New accounts: email and password (the username is made from the email). Signing in: either one.
+  $('userLabel').textContent = m === 'login' ? 'Email o usuario' : 'Email';
+  $('user').type = m === 'login' ? 'text' : 'email';
+  $('user').autocomplete = m === 'login' ? 'username' : 'email';
+  $('user').maxLength = 120;
   $('authLead').textContent = m === 'login'
     ? 'Tus lecciones, estrellas y sesiones de práctica quedan guardadas para seguir desde cualquier computadora.'
-    : 'Elegí un usuario y una contraseña. Lo que ya practicaste en este navegador se suma a tu cuenta.';
+    : 'Solo tu email y una contraseña. Lo que ya practicaste en este navegador se suma a tu cuenta.';
   $('authErr').textContent = '';
 }
 function openAuth() { setAuthMode('login'); $('pass').value = ''; $('authDlg').showModal(); $('user').focus(); }
@@ -962,14 +970,18 @@ $('authForm').onsubmit = async e => {
   $('authErr').textContent = ''; $('authSubmit').disabled = true;
   try {
     const regId = eventId(); // a new account is a CompleteRegistration from the server too, with this id
-    const r = await api('auth', { action: authMode, username: $('user').value, password: $('pass').value, ...(authMode === 'register' ? { track: metaTrack(regId) } : {}) });
+    const login = $('user').value.trim(), claim = storedClaim();
+    const r = await api('auth', { action: authMode, password: $('pass').value, ...(claim ? { claim } : {}),
+      ...(authMode === 'register' ? { ...(login.includes('@') ? { email: login } : { username: login }), track: metaTrack(regId) } : { username: login }) });
+    if (r.claimed) { forgetClaim(); tn.capture('purchase_claimed', { via: authMode }); }
     $('authDlg').close();
     await signedIn(r.token, r.user.name, r.user.display);
     loadRanking();
     if (authMode === 'register') track('CompleteRegistration', { content_name: 'Cuenta Templo Ninja' }, regId);
-    tn.capture(authMode === 'register' ? 'signed_up' : 'logged_in', { source: signupFrom || 'account' });
+    tn.capture(authMode === 'register' ? 'signed_up' : 'logged_in', { source: signupFrom || 'account', method: login.includes('@') ? 'email' : 'username' });
     const left = limited() ? Math.max(0, billing.freePerDay - usedToday()) : 0, more = signupFrom && left ? ` Tenés ${left} ${left === 1 ? 'práctica' : 'prácticas'} más hoy: ¡a seguir!` : '';
-    toast((authMode === 'register' ? `Cuenta creada. Tu progreso se guarda en ${r.user.name}.` : `Hola, ${shownName()}. Seguimos donde dejaste.`) + more);
+    toast(r.claimed ? `Listo: tu acceso ilimitado quedó guardado en tu cuenta ✦ Entrás con ${authMode === 'register' && login.includes('@') ? 'tu email' : r.user.name} desde cualquier dispositivo.`
+      : (authMode === 'register' ? `Cuenta creada. Tu progreso se guarda en ${r.user.name}.` : `Hola, ${shownName()}. Seguimos donde dejaste.`) + more);
     signupFrom = null;
   } catch (err) { $('authErr').textContent = err.message; }
   $('authSubmit').disabled = false;
@@ -1553,8 +1565,22 @@ const PLAYS_KEY = 'teclado-ciego-plays', arDay = () => new Date(Date.now() - 3 *
 const limited = () => billing.enabled && !billing.premium;
 function guestPlays() { try { const p = JSON.parse(localStorage.getItem(PLAYS_KEY)); return p?.day === arDay() ? p.n : 0; } catch { return 0; } }
 const usedToday = () => auth.name ? billing.plays : guestPlays();
+/* Paying without an account: the server gives a claim reference (g-…) for that payment. This browser keeps it, and the
+   way back from Mercado Pago carries it too (?claim=), in case the payment ends in another browser. While no account
+   has claimed it, the guest is unlimited here; creating an account (or signing in) with it moves the access there. */
+const CLAIM_KEY = 'tn-claim', CLAIM_RE = /^g-[a-f0-9]{32}$/;
+const q0Claim = () => { const c = new URLSearchParams(location.search).get('claim'); return CLAIM_RE.test(c || '') ? c : null; };
+function storedClaim() { try { const c = localStorage.getItem(CLAIM_KEY); return CLAIM_RE.test(c || '') ? c : null; } catch { return null; } }
+function keepClaim(c) { try { if (CLAIM_RE.test(c || '')) localStorage.setItem(CLAIM_KEY, c); } catch {} }
+function forgetClaim() { try { localStorage.removeItem(CLAIM_KEY); } catch {} }
 async function loadBilling(sync) {
-  try { Object.assign(billing, await api('billing', sync ? { action: 'sync' } : undefined)); } catch {}
+  try { Object.assign(billing, await api('billing', auth.name && sync ? { action: 'sync' } : undefined)); } catch {}
+  const claim = !auth.name && storedClaim();
+  if (claim) try {
+    const g = await api('billing', { action: 'guest', claim, sync: Boolean(sync) });
+    Object.assign(billing, { premium: g.premium, purchase: g.purchase, guestEmail: g.email });
+    if (g.claimed) forgetClaim(); // that payment is already in an account: signing in there gives the access
+  } catch {}
   await startPixel(billing.pixel); // before any event of this page, like the Purchase coming back from paying
   startGoogleTag(billing.gads);
   if (billing.enabled) tn.people({ plan: billing.premium ? 'ilimitado' : 'gratis' });
@@ -1655,7 +1681,7 @@ function countPractice() {
   renderPlanNote();
 }
 function renderPlanNote() {
-  $('upgradeLabel').innerHTML = billing.premium ? 'Ninja <span class="cta-long">ilimitado</span>' : 'Apoyá <span class="cta-long">el templo</span>';
+  $('upgradeLabel').innerHTML = billing.premium ? 'Ninja <span class="cta-long">ilimitado</span>' : 'Sin <span class="cta-long">límites</span>';
   const note = $('planNote');
   note.hidden = !limited();
   if ($('dojoCount').dataset.ready) renderDojo(); // the plan's meter also shows when the free practices run out
@@ -1675,40 +1701,56 @@ function showPlan(reason) {
   if (!billing.premium) trackBoth('ViewContent', { content_name: 'Templo Ninja · precios', content_category: reason }, { reason });
   // Also opened from the header CTA: without payments configured, or with the plan already active, it only informs.
   const canBuy = billing.enabled && !billing.premium;
-  const offer = freeAccountOffer(), outOfGuest = offer && reason === 'limit';
-  $('planEyebrow').textContent = outOfGuest ? '⛩ PLAN GRATIS' : '⛩ APORTE AL TEMPLO';
+  const offer = freeAccountOffer(), outOfGuest = offer && reason === 'limit', used = usedToday();
+  $('planEyebrow').textContent = outOfGuest ? '⛩ PLAN GRATIS' : '⛩ ACCESO ILIMITADO';
   $('planTitle').textContent = outOfGuest ? 'Seguí entrenando gratis' : 'Entrená sin límites, para siempre';
+  // What the person just hit, not a reminder of the free plan: that is the moment to decide.
   $('planReason').textContent = !billing.enabled ? 'El acceso ilimitado está en camino. Mientras tanto, todo es gratis y sin límites: aprovechalo.'
     : billing.premium ? '✦ Ya tenés acceso ilimitado. ¡Gracias por bancar el templo! Los monjes ninja te lo agradecen 🙏'
     : outOfGuest ? `Ya usaste tus ${billing.freePerDay} prácticas gratis de hoy sin cuenta.`
-    : reason === 'limit' ? `Ya usaste tus ${billing.freePerDay} prácticas gratis de hoy. Volvé mañana o hacé tu aporte para seguir ahora.`
+    : reason === 'limit' ? `Usaste tus ${billing.freePerDay} prácticas gratis de hoy. Seguí ahora sin límites, o volvé mañana.`
     : reason === 'iq_result' ? 'Tu IQ ninja sube con práctica: figuras, números e inglés sin límite diario, para siempre.'
+    : used ? `Hoy usaste ${Math.min(used, billing.freePerDay)} de tus ${billing.freePerDay} prácticas gratis.`
     : `Con el plan gratis tenés ${billing.freePerDay} prácticas por día${offer ? ` (${billing.accountPerDay} con tu cuenta gratis)` : ''}.`;
   $('planFree').hidden = !offer; $('planOr').hidden = !offer;
-  $('planFreeText').textContent = `Solo usuario y contraseña: tenés ${billing.accountPerDay} prácticas por día, tu progreso guardado en cualquier dispositivo y tu lugar en el ranking.`;
+  $('planFreeText').textContent = `Solo email y contraseña: tenés ${billing.accountPerDay} prácticas por día, tu progreso guardado en cualquier dispositivo y tu lugar en el ranking.`;
   $('planSubmit').classList.toggle('primary', !offer);
   $('planPrice').textContent = billing.enabled ? billing.price : '';
   $('planPrice').hidden = !billing.enabled; $('planSubmit').hidden = !canBuy;
-  $('planSubmit').textContent = auth.name ? 'Hacer mi aporte con Mercado Pago' : 'Crear cuenta o entrar para hacer mi aporte';
+  // Paying never needs an account first: a guest pays and creates the account afterwards (the access waits for it).
+  $('planSubmit').textContent = `Pagar ${moneyLabel()} con Mercado Pago`;
+  $('planPay').hidden = !canBuy;
+  $('planInApp').hidden = !(canBuy && IN_APP); // Instagram's and Facebook's own browser: how to go to a real one
   $('planErr').textContent = ''; $('planSubmit').disabled = false;
   // On a computer, also the phone: that is where most people have Mercado Pago open (the first purchase was paid that way).
-  $('planPhone').hidden = !(canBuy && auth.name && matchMedia('(hover: hover) and (pointer: fine)').matches);
+  $('planPhone').hidden = !(canBuy && matchMedia('(hover: hover) and (pointer: fine)').matches);
   $('planQrBox').hidden = true; stopQrWatch();
   $('planOffer').hidden = true; // the 24-hour offer (precio-oferta-24h) ended: the base price for everyone
+  planLeaving = false;
   if (!$('planDlg').open) $('planDlg').showModal();
+  // The keyboard starts on what the modal asks for (not on the first link, the terms).
+  ($('planFree').hidden || !canBuy ? (canBuy ? $('planSubmit') : $('planClose')) : $('planSignup')).focus({ preventScroll: true });
 }
+// "$ 4.900": the amount alone, for the button (billing.price is the full label, "$ 4.900 · pago único").
+const moneyLabel = () => billing.amount ? '$ ' + Number(billing.amount).toLocaleString('es-AR') : '';
+// Instagram, Facebook, Messenger and Threads open links in their own browser. Mercado Pago may not open well there.
+const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Barcelona/i.test(navigator.userAgent || '');
+// "Ahora no" or Esc: the modal was turned down (not left for signing up or paying).
+let planLeaving = false;
+function planDismissed(via) { if (!planLeaving) tn.capture('pricing_dismissed', { reason: planFrom, via, logged_in: !!auth.name, in_app: IN_APP }); }
 function renderPlan() {
   const st = $('planStatus'), sub = billing.subscription;
   $('upgrade').hidden = !limited();
   st.textContent = !billing.enabled ? ''
     : billing.gift ? '✦ Plan Ilimitado (cortesía)'
-    : billing.lifetime ? '✦ Acceso ilimitado para siempre. ¡Gracias por tu aporte al templo!'
+    : billing.lifetime ? '✦ Acceso ilimitado para siempre. ¡Gracias por bancar el templo!'
     : billing.premium ? (sub?.status === 'authorized' ? '✦ Plan Ilimitado activo. Se renueva solo cada mes; lo gestionás desde Mercado Pago.' : `✦ Plan Ilimitado vigente hasta el ${new Date(sub.paidUntil).toLocaleDateString('es-AR')}.`)
     : `Plan gratis: ${billing.freePerDay} prácticas por día.`;
 }
 $('upgrade').onclick = () => { $('acctDlg').close(); showPlan('upgrade'); };
 $('upgradeCta').onclick = () => showPlan('upgrade');
-$('planClose').onclick = () => $('planDlg').close();
+$('planClose').onclick = () => { planDismissed('ahora_no'); $('planDlg').close(); };
+$('planDlg').addEventListener('cancel', () => planDismissed('esc'));
 $('planDlg').addEventListener('close', stopQrWatch);
 
 /* The pricing experiment "precio-oferta-24h" (a 24-hour offer, then $9.900) ended on 2026-10-11 with no winner: the
@@ -1716,26 +1758,31 @@ $('planDlg').addEventListener('close', stopQrWatch);
 // Free account from the plan: the guest keeps practicing today with the account's practices.
 function signupFromPlan(mode) {
   signupFrom = 'plan'; tn.capture('signup_prompt_clicked', { mode, used_today: usedToday() });
-  $('planDlg').close(); openAuth(); setAuthMode(mode);
-  if (mode === 'register') $('authLead').textContent = `Elegí un usuario y una contraseña. Con tu cuenta gratis tenés ${billing.accountPerDay} prácticas por día, y lo que ya practicaste en este navegador se suma.`;
+  planLeaving = true; $('planDlg').close(); openAuth(); setAuthMode(mode);
+  if (mode === 'register') $('authLead').textContent = `Solo tu email y una contraseña. Con tu cuenta gratis tenés ${billing.accountPerDay} prácticas por día, y lo que ya practicaste en este navegador se suma.`;
 }
 $('planSignup').onclick = () => signupFromPlan('register');
 $('planLogin').onclick = () => signupFromPlan('login');
 // Mercado Pago's checkout link, here (to go now) or as a QR (to pay from the phone).
 async function checkout(via) {
-  tn.capture('checkout_clicked', { logged_in: !!auth.name, price: billing.amount ?? null, currency: billing.currency ?? null, source: planFrom, via });
-  if (!auth.name) { planAfterLogin = true; $('planDlg').close(); openAuth(); setAuthMode('register'); return null; }
+  const guest = !auth.name;
+  tn.capture('checkout_clicked', { logged_in: !guest, guest, in_app: IN_APP, price: billing.amount ?? null, currency: billing.currency ?? null, source: planFrom, via });
   $('planSubmit').disabled = $('planPhone').disabled = true; $('planErr').textContent = '';
   const checkoutId = eventId(); // the server sends the same InitiateCheckout once the checkout exists
   track('InitiateCheckout', { value: billing.amount, currency: billing.currency, content_name: 'Templo Ninja · acceso ilimitado' }, checkoutId);
-  try { const { url } = await api('billing', { action: 'buy', track: metaTrack(checkoutId) }); tn.capture('checkout_started', { provider: 'mercadopago', via }); return url; }
-  catch (err) { tn.capture('checkout_error', { status: err.status ?? null }); $('planErr').textContent = err.message; return null; }
+  try {
+    const r = await api('billing', { action: 'buy', track: metaTrack(checkoutId), ...(guest ? { ph: window.posthog?.get_distinct_id?.() || anonId, claim: storedClaim() || undefined } : {}) });
+    if (r.claim) keepClaim(r.claim); // the guest's payment: this browser finds it when coming back
+    tn.capture('checkout_started', { provider: 'mercadopago', via, guest, in_app: IN_APP });
+    return r.url;
+  }
+  catch (err) { tn.capture('checkout_error', { status: err.status ?? null, guest, in_app: IN_APP }); $('planErr').textContent = err.message; return null; }
   finally { $('planSubmit').disabled = $('planPhone').disabled = false; }
 }
 $('planForm').onsubmit = async e => {
   e.preventDefault();
   const url = await checkout('web');
-  if (url) { $('planSubmit').disabled = true; location.href = url; }
+  if (url) { planLeaving = true; $('planSubmit').disabled = true; location.href = url; }
 };
 // The QR library loads only when someone asks for it (vendor/qrcode.js, MIT).
 const loadQr = () => window.qrcode ? Promise.resolve() : new Promise((ok, fail) => {
@@ -1756,8 +1803,9 @@ $('planPhone').onclick = async () => {
     if (Date.now() > until) return stopQrWatch();
     await loadBilling(true);
     if (!billing.premium) return;
-    stopQrWatch(); trackPurchase(); renderPlan(); $('planDlg').close();
-    toast('¡Gracias por tu aporte! Los monjes ninja te lo agradecen 🙏 Ya tenés acceso ilimitado ✦');
+    stopQrWatch(); trackPurchase(); renderPlan(); planLeaving = true; $('planDlg').close();
+    if (!auth.name) return askToKeepAccess();
+    toast('¡Listo! Ya tenés acceso ilimitado ✦ Los monjes ninja te lo agradecen 🙏');
   }, 5000);
 };
 
@@ -2004,18 +2052,45 @@ renderRanking();
 (auth.token ? api('auth') : Promise.reject(Object.assign(new Error('guest'), { status: 401 }))).then(r => signedIn(auth.token, r.user.name, r.user.display)).catch(err => {
   if (err.status === 401) { if (auth.token) signedOut(); return; }
   if (err.status === 0 || err.status === 404) { $('acctBtn').hidden = true; $('foot').textContent = 'Tu progreso se guarda en este navegador.'; }
-}).finally(() => { loadRanking(); if (!auth.name) { loadBilling(); paidWithoutSession(); } });
+}).finally(() => {
+  loadRanking();
+  if (!auth.name) {
+    // A guest coming back from paying loads the plan in paidWithoutSession (asking Mercado Pago), not twice at once.
+    if (!(q0Claim() && new URLSearchParams(location.search).has('aporte'))) loadBilling();
+    paidWithoutSession();
+  }
+});
 // Mercado Pago may send the person back to another browser than the one with the session (the phone's default one):
 // the payment is already in the account, so ask them to sign in here, with the username filled in.
-function paidWithoutSession() {
-  const q = new URLSearchParams(location.search), back = q.get('aporte'), user = q.get('external_reference');
+async function paidWithoutSession() {
+  const q = new URLSearchParams(location.search), back = q.get('aporte'), user = q.get('external_reference'), claim = q0Claim();
   if (!back) return;
   window.history.replaceState(null, '', location.pathname + location.hash);
+  // A guest's payment (paid before having an account): unlimited here right away, and an account keeps it for good.
+  if (claim) {
+    keepClaim(claim);
+    await loadBilling(back === 'ok');
+    renderPlanNote();
+    tn.capture('payment_return_guest', { status: back, premium: billing.premium });
+    if (billing.premium) { trackPurchase(); return askToKeepAccess(); }
+    if (back !== 'ok') { tn.capture('payment_failed', { status: back, guest: true }); return toast('El pago no se completó. Podés intentarlo de nuevo cuando quieras.'); }
+    tn.capture('payment_pending', { guest: true });
+    return toast('Estamos esperando la confirmación de Mercado Pago. Puede tardar unos minutos: tu acceso se activa solo en este navegador.');
+  }
   tn.capture('payment_return_signed_out', { status: back });
   if (back !== 'ok') return;
-  toast('¡Gracias por tu aporte! 🙏 Entrá con tu usuario para usar el acceso ilimitado en este navegador.');
+  toast('¡Listo! 🙏 Entrá con tu cuenta para usar el acceso ilimitado en este navegador.');
   openAuth(); setAuthMode('login');
   if (/^[a-z0-9_.-]{3,20}$/.test(user || '')) $('user').value = user;
+}
+// After a guest pays: the access already works here; an account (just email and password) keeps it on any device.
+function askToKeepAccess() {
+  toast('¡Pago aprobado! Ya tenés acceso ilimitado ✦ Creá tu cuenta para no perderlo.');
+  signupFrom = 'payment'; openAuth(); setAuthMode('register');
+  $('authTitle').textContent = 'Guardá tu acceso ilimitado';
+  $('authLead').textContent = 'Ya pagaste: el acceso ilimitado funciona en este navegador. Con tu email y una contraseña queda en tu cuenta para siempre, en cualquier dispositivo.';
+  if (billing.guestEmail) $('user').value = billing.guestEmail;
+  tn.capture('signup_after_payment_shown');
 }
 // Another layout of the same page (nueva.html → nueva.js) drives the app through these, and gets told of its moves
 // through window.tnLayout (start, quiz, cog, home). index.html sets no layout, so nothing changes there.

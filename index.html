@@ -27,7 +27,7 @@
     <a href="#teclado" class="ninja-cta tc-cta" id="tcCta">⌨️ Teclado <span class="cta-long">Ciego</span></a>
     <a href="#ninja" class="ninja-cta" id="cogCta">🥷 Ninja <span class="cta-long">mental</span></a>
     <nav class="main-nav" aria-label="Navegación principal"><a href="#learning">Lecciones</a><a href="#evo">Mi progreso</a><a href="#ranking">Ranking</a></nav>
-    <button class="upgrade-cta" id="upgradeCta">✦ <span id="upgradeLabel">Apoyá <span class="cta-long">el templo</span></span></button>
+    <button class="upgrade-cta" id="upgradeCta">✦ <span id="upgradeLabel">Sin <span class="cta-long">límites</span></span></button>
     <button class="acct out" id="acctBtn">Entrar</button>
   </header>
   <details class="preference-panel" id="preferencePanel" open><summary>⚙ Tu teclado, las ayudas y el paisaje</summary><div class="preferences">
@@ -330,7 +330,7 @@
       <button type="button" data-v="login" aria-pressed="true">Ya tengo cuenta</button>
       <button type="button" data-v="register" aria-pressed="false">Crear cuenta</button>
     </div>
-    <label class="field" for="user">Usuario<input id="user" autocomplete="username" maxlength="20" autocapitalize="none" spellcheck="false"></label>
+    <label class="field" for="user"><span id="userLabel">Email o usuario</span><input id="user" autocomplete="username" maxlength="120" autocapitalize="none" spellcheck="false"></label>
     <label class="field" for="pass">Contraseña<input id="pass" type="password" autocomplete="current-password" maxlength="100"></label>
     <p class="err" id="authErr" role="alert"></p>
     <div class="actions">
@@ -356,7 +356,7 @@
       <p class="err" id="aliasErr" role="alert"></p>
     </form>
     <p class="plan-status" id="planStatus"></p>
-    <button class="btn" id="upgrade" hidden>✦ Apoyar el templo: acceso ilimitado</button>
+    <button class="btn" id="upgrade" hidden>✦ Acceso ilimitado para siempre</button>
     <div class="hist" id="hist"></div>
     <div class="actions">
       <button class="btn primary" id="acctClose">Seguir practicando</button>
@@ -367,7 +367,7 @@
 
 <dialog id="planDlg" aria-labelledby="planTitle">
   <form class="dlg" id="planForm" novalidate>
-    <span class="eyebrow" id="planEyebrow">⛩ APORTE AL TEMPLO</span>
+    <span class="eyebrow" id="planEyebrow">⛩ ACCESO ILIMITADO</span>
     <h2 id="planTitle">Entrená sin límites, para siempre</h2>
     <p id="planReason"></p>
     <div class="plan-free" id="planFree" hidden>
@@ -385,17 +385,19 @@
       <div class="pv-cd" role="timer" aria-live="off"><span class="lbl">Tu precio vale por</span><b id="cdH">00</b><i>:</i><b id="cdM">00</b><i>:</i><b id="cdS">00</b></div>
       <p class="pv-note" id="offerNote"></p>
     </div>
-    <ul class="plan-list"><li>Un solo pago: sin suscripción ni débitos automáticos.</li><li>Lecciones, sesiones y desafíos ilimitados, todos los días y para siempre.</li><li>Tu pequeño aporte al templo nos permite mejorar el entrenamiento semana a semana. Los monjes ninja te lo agradecerán 🙏</li></ul>
+    <ul class="plan-list"><li>Simulacros de entrevista, tests por empresa, lecciones y desafíos sin tope diario, para siempre.</li><li>Un solo pago: sin suscripción ni débitos automáticos.</li><li>Garantía de 14 días: si no te sirve, te devolvemos todo.</li></ul>
     <p class="price" id="planPrice"></p>
+    <p class="plan-pay" id="planPay" hidden>Pagás en Mercado Pago con tarjeta de débito o crédito, dinero en cuenta o efectivo. No necesitás tener cuenta para pagar.</p>
+    <p class="plan-inapp" id="planInApp" hidden>¿Mercado Pago no abre desde acá? Tocá ⋯ arriba a la derecha, elegí «Abrir en el navegador» y pagá desde ahí.</p>
     <p class="err" id="planErr" role="alert"></p>
-    <p class="plan-legal">Al hacer tu aporte aceptás los <a href="terminos.html" target="_blank">términos</a> y la <a href="reembolsos.html" target="_blank">política de reembolsos</a>. <a href="precios.html" target="_blank">Ver planes</a>.</p>
+    <p class="plan-legal">Al pagar aceptás los <a href="terminos.html" target="_blank">términos</a> y la <a href="reembolsos.html" target="_blank">política de reembolsos</a>. <a href="precios.html" target="_blank">Ver planes</a>.</p>
     <div class="plan-qr" id="planQrBox" hidden>
       <p class="plan-free-title">Pagá desde tu celular</p>
       <div id="planQr" aria-hidden="true"></div>
       <p id="planQrText">Escaneá el código con la cámara del celular: se abre Mercado Pago y pagás desde la app. Cuando termines, esta pantalla se actualiza sola.</p>
     </div>
     <div class="actions">
-      <button type="submit" class="btn primary" id="planSubmit">Hacer mi aporte con Mercado Pago</button>
+      <button type="submit" class="btn primary" id="planSubmit">Pagar con Mercado Pago</button>
       <button type="button" class="linkbtn" id="planPhone" hidden>📱 Prefiero pagar desde el celular</button>
       <button type="button" class="linkbtn" id="planClose">Ahora no</button>
     </div>

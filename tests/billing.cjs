@@ -99,8 +99,11 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Each practice is a practice_started event with its lesson and the free practices left', events(guest, 'practice_started').length === 5
       && events(guest, 'practice_started')[0].section === 'teclado-ciego' && events(guest, 'practice_started')[0].kind === 'leccion' && events(guest, 'practice_started')[0].lesson && events(guest, 'practice_started').map(e => e.free_left).join() === '4,3,2,1,0');
     check('The sixth practice shows the plan', !(await practice(guest)) && await guest.isVisible('#planDlg') && (await guest.textContent('#planReason')).includes('5 prácticas'));
-    check('The plan is a one-time contribution to the temple', (await guest.textContent('#planPrice')) === '$ 4.900 · pago único' && (await guest.textContent('#planDlg')).includes('Los monjes ninja te lo agradecerán') && (await guest.textContent('#planDlg')).includes('sin suscripción'));
-    check('Guests are asked to sign in to pay', (await guest.textContent('#planSubmit')).includes('Crear cuenta'));
+    check('The plan is a one-time payment, with what it unlocks and the 14-day guarantee', (await guest.textContent('#planPrice')) === '$ 4.900 · pago único' && (await guest.textContent('#planDlg')).includes('Garantía de 14 días')
+      && (await guest.textContent('#planDlg')).includes('sin suscripción') && !(await guest.textContent('#planDlg')).includes('aporte') && await guest.isVisible('#planPay'));
+    check('Guests can pay without an account', (await guest.textContent('#planSubmit')) === 'Pagar $ 4.900 con Mercado Pago');
+    check('With a free account to offer, the keyboard starts on it (not on the terms)', await guest.evaluate(() => document.activeElement?.id) === 'planSignup');
+    check('Outside Instagram\'s browser, no note about opening another one', await guest.isHidden('#planInApp'));
     check('Out of guest practices, a free account comes first', await guest.isVisible('#planFree') && (await guest.textContent('#planTitle')) === 'Seguí entrenando gratis'
       && (await guest.textContent('#planFreeText')).includes('10 prácticas por día') && await guest.isVisible('#planOr') && !(await guest.getAttribute('#planSubmit', 'class')).includes('primary'));
     check('Hitting the limit is a pricing_viewed event with its reason', events(guest, 'pricing_viewed').some(e => e.reason === 'limit' && e.payments_on && !e.logged_in));
@@ -111,7 +114,9 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('The server ViewContent carries what Meta matches people with', viewSent.user_data.external_id[0] === hash(guestAnon) && viewSent.user_data.client_ip_address === '127.0.0.1'
       && viewSent.user_data.client_user_agent && viewSent.user_data.fbp === 'fb.1.1700000000000.42' && /\.clickGuest1$/.test(viewSent.user_data.fbc) && viewSent.event_source_url === SITE + '/');
     check('Only the page\'s own events can be sent through /api/track', (await fetch(SITE + '/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'Purchase', event_id: 'ev_12345678' }) })).status === 400);
-    await guest.click('#planClose'); await guest.reload(); await guest.waitForSelector('#planNote:not([hidden])');
+    await guest.click('#planClose');
+    check('"Ahora no" is a pricing_dismissed event', events(guest, 'pricing_dismissed').some(e => e.reason === 'limit' && e.via === 'ahora_no' && !e.logged_in));
+    await guest.reload(); await guest.waitForSelector('#planNote:not([hidden])');
     check('Reloading does not reset the daily limit', (await guest.textContent('#planNote')).includes('ya usaste'));
     check('Without free practices left, the daily plan offers the free account and unlimited access instead of a rest', await guest.isVisible('#dojoUnlock') && (await guest.textContent('#dojoUnlock')) === 'Seguir gratis'
       && (await guest.textContent('#dojoCount')).includes('cuenta gratis') && (await guest.textContent('#dojoCount')).includes('acceso ilimitado') && !(await guest.textContent('#dojo')).includes('descanso'));
@@ -171,9 +176,11 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await ana2.click('#acctBtn'); await ana2.fill('#user', 'ana'); await ana2.fill('#pass', 'secreto1'); await ana2.click('#authSubmit');
     await ana2.waitForFunction(() => document.querySelector('#planNote').textContent.includes('ya usaste'));
     check('The daily limit follows the account to another browser', !(await practice(ana2)) && await ana2.isVisible('#planDlg'));
-    check('Paying needs no extra data', (await ana2.textContent('#planSubmit')) === 'Hacer mi aporte con Mercado Pago');
+    check('Paying needs no extra data', (await ana2.textContent('#planSubmit')) === 'Pagar $ 4.900 con Mercado Pago');
+    check('An account out of practices is told so, not reminded of the free plan', (await ana2.textContent('#planReason')).startsWith('Usaste tus 10 prácticas gratis de hoy'));
+    check('Without a free account to offer, the keyboard starts on paying', await ana2.evaluate(() => document.activeElement?.id) === 'planSubmit');
     await Promise.all([ana2.waitForURL(/aporte=ok/), ana2.click('#planSubmit')]);
-    await ana2.waitForFunction(() => document.querySelector('#toast').textContent.includes('Gracias'));
+    await ana2.waitForFunction(() => document.querySelector('#toast').textContent.includes('monjes ninja'));
     for (let i = 0; i < 50 && !(fired(ana2, 'Purchase').length && conv(ana2, 'Comp1abc').length); i++) await ana2.waitForTimeout(100); // the pixel and gtag scripts load after the page
     const checkout = fired(ana2, 'InitiateCheckout')[0], buy = fired(ana2, 'Purchase');
     check('Going to pay is an InitiateCheckout with the price', checkout && checkout[2].value === 4900 && checkout[2].currency === 'ARS');
@@ -199,14 +206,14 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('The account shows access forever', await ana2.isHidden('#upgrade'));
     await ana2.click('#acctClose');
     // A checkout abandoned on the computer comes back as "error" while the person already paid from the phone
-    await ana2.goto(SITE + '/?aporte=error'); await ana2.waitForFunction(() => document.querySelector('#toast').textContent.includes('Gracias'));
+    await ana2.goto(SITE + '/?aporte=error'); await ana2.waitForFunction(() => document.querySelector('#toast').textContent.includes('acceso ilimitado'));
     check('Coming back with "error" from a checkout that the account already paid thanks instead of failing', events(ana2, 'payment_failed').length === 0 && !ana2.url().includes('aporte'));
     check('…and does not count the purchase again', fired(ana2, 'Purchase').length === 1 && conv(ana2, 'Comp1abc').length === 1);
     // Mercado Pago sends the phone back to its default browser, where there is no session
     const elsewhere = await open('/?aporte=ok&external_reference=ana');
     await elsewhere.waitForSelector('#authDlg[open]');
     check('Back from paying without a session: thanks, and the sign-in with the username filled in', (await elsewhere.inputValue('#user')) === 'ana'
-      && (await elsewhere.textContent('#toast')).includes('Entrá con tu usuario') && events(elsewhere, 'payment_return_signed_out').some(e => e.status === 'ok') && !elsewhere.url().includes('aporte'));
+      && (await elsewhere.textContent('#toast')).includes('Entrá con tu cuenta') && events(elsewhere, 'payment_return_signed_out').some(e => e.status === 'ok') && !elsewhere.url().includes('aporte'));
 
     // Server side
     const bob = await open(); await register(bob, 'bobo');
@@ -256,7 +263,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Paying from the phone shows a QR, measured as checkout via qr', await cami.isVisible('#planQrBox') && events(cami, 'checkout_started').some(e => e.via === 'qr')
       && events(cami, 'checkout_clicked').some(e => e.via === 'qr') && fired(cami, 'InitiateCheckout').length === 1);
     await cami.waitForFunction(() => !document.querySelector('#planDlg').open, null, { timeout: 15000 });
-    check('Once the payment is in, the computer thanks and unlocks by itself', (await cami.textContent('#toast')).includes('Gracias') && await cami.isHidden('#planNote') && fired(cami, 'Purchase').length === 1);
+    check('Once the payment is in, the computer thanks and unlocks by itself', (await cami.textContent('#toast')).includes('acceso ilimitado') && await cami.isHidden('#planNote') && fired(cami, 'Purchase').length === 1);
     const phonePage = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })).newPage();
     await phonePage.goto(SITE); await phonePage.evaluate(t => localStorage.setItem('teclado-ciego-token', t), token); // bobo: free plan again after the refund
     await phonePage.reload(); await phonePage.waitForSelector('#acctBtn .nm'); await phonePage.waitForSelector('#planNote:not([hidden])'); await phonePage.evaluate(() => document.querySelector('#upgradeCta').click());
@@ -272,6 +279,26 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
       && stale.amount === 4900 && stale.offer === null && events(ended, 'price_offer_seen').length === 0);
     await bill(endedToken, { action: 'buy' });
     check('…and Mercado Pago charges $4.900', prices.at(-1) === 4900);
+    // Paying without an account: Mercado Pago right away, the access works on coming back, and an account keeps it
+    const gus = await open();
+    for (let i = 0; i < 5; i++) await practice(gus);
+    await practice(gus); await gus.waitForSelector('#planDlg[open]');
+    await Promise.all([gus.waitForURL(/aporte=ok/), gus.click('#planSubmit')]);
+    await gus.waitForSelector('#authDlg[open]');
+    check('A guest pays without an account, and is then asked to keep the access in one', (await gus.textContent('#authTitle')) === 'Guardá tu acceso ilimitado'
+      && (await gus.textContent('#userLabel')) === 'Email' && await gus.isHidden('#planNote') && !gus.url().includes('claim'));
+    for (let i = 0; i < 50 && !(fired(gus, 'Purchase').length && conv(gus, 'Comp1abc').length); i++) await gus.waitForTimeout(100);
+    const gusBuy = fired(gus, 'Purchase'), gusId = gusBuy[0]?.[3]?.eventID;
+    check('The guest\'s purchase is one Purchase and one Google Ads purchase, with the payment id', gusBuy.length === 1 && /^pay_pay_\d+$/.test(gusId || '') && conv(gus, 'Comp1abc').length === 1 && conv(gus, 'Comp1abc')[0].transaction_id === gusId);
+    check('…and the server reports the same Purchase', (await waitSent('Purchase', 4)).some(e => e.event_id === gusId));
+    check('The guest\'s checkout is an InitiateCheckout and a checkout_started as a guest', fired(gus, 'InitiateCheckout').length === 1 && conv(gus, 'Pago1abc').length === 1
+      && events(gus, 'checkout_started').some(e => e.guest) && events(gus, 'payment_return_guest').some(e => e.premium));
+    await gus.fill('#user', 'gus@example.com'); await gus.fill('#pass', 'secreto1'); await gus.click('#authSubmit'); await gus.waitForSelector('#acctBtn .nm');
+    await gus.waitForFunction(() => document.querySelector('#toast').textContent.includes('quedó guardado'));
+    const gusToken = await gus.evaluate(() => localStorage.getItem('teclado-ciego-token'));
+    check('Creating the account keeps the access for good, without counting the purchase again', (await planOf(gusToken)).lifetime && fired(gus, 'Purchase').length === 1
+      && events(gus, 'purchase_claimed').length === 1 && fired(gus, 'CompleteRegistration').length === 1 && events(gus, 'signed_up').some(e => e.method === 'email'));
+    check('The email never reaches the analytics events', ![...gus.tn, ...ph].some(e => JSON.stringify(e).includes('gus@example.com')));
     const gift = await open(); await register(gift, 'regalo');
     await gift.waitForFunction(() => document.querySelector('#planNote').hidden);
     check('Courtesy users are unlimited', true);

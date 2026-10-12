@@ -44,10 +44,13 @@ async function saveContext(name, ctx) {
 }
 const readContext = async name => JSON.parse(await redis('GET', 'meta:' + name).catch(() => null) || 'null') || {};
 
-function userData(ctx, name) {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function userData(ctx, name, email) {
   const ids = [ctx.anon, name].filter(Boolean).map(sha256); // the pixel's external_id is the browser's anonymous id
+  const em = typeof email === 'string' && EMAIL_RE.test(email.trim()) ? sha256(email) : null; // hashed, never in plain text
   return {
     ...(ids.length ? { external_id: ids } : {}),
+    ...(em ? { em: [em] } : {}),
     ...(ctx.ip ? { client_ip_address: ctx.ip } : {}),
     ...(ctx.ua ? { client_user_agent: ctx.ua } : {}),
     ...(ctx.fbp ? { fbp: ctx.fbp } : {}),
@@ -56,12 +59,12 @@ function userData(ctx, name) {
 }
 
 // Sends one event to the Conversions API. Never throws: a failed report must not break the app or a payment.
-async function sendEvent({ event, id, time, ctx = {}, name, custom = {} }) {
+async function sendEvent({ event, id, time, ctx = {}, name, email, custom = {} }) {
   const s = metaSettings();
   if (!s.token || !cleanEventId(id)) return false;
   const data = [{
     event_name: event, event_id: id, event_time: Math.floor((time || Date.now()) / 1000), action_source: 'website',
-    event_source_url: ctx.url || siteUrl() + '/', user_data: userData(ctx, name), custom_data: custom,
+    event_source_url: ctx.url || siteUrl() + '/', user_data: userData(ctx, name, email), custom_data: custom,
   }];
   try {
     const response = await fetch(`${s.graph}/${s.pixel}/events?access_token=${encodeURIComponent(s.token)}`, {
@@ -77,13 +80,15 @@ async function sendEvent({ event, id, time, ctx = {}, name, custom = {} }) {
 
 // The Purchase of a one-time payment. It may come from the webhook, without the browser: the context is the one
 // saved when the person went to pay (and the cookies that travel in the payment's metadata, from before).
+// "name" is the account, or the guest reference when the person paid before having one. The payer's email (hashed)
+// helps Meta match the purchase to the ad.
 async function reportPurchase(name, payment) {
   const meta = payment.metadata || {};
   const ctx = { ...await readContext(name) };
   for (const k of ['fbp', 'fbc', 'ua']) if (!ctx[k] && meta[k]) ctx[k] = String(meta[k]);
   delete ctx.url; // the purchase happens back on the home page, whatever page the checkout started from
   return sendEvent({
-    event: 'Purchase', id: purchaseId(payment.id), name, ctx,
+    event: 'Purchase', id: purchaseId(payment.id), name, ctx, email: payment.payer?.email,
     time: Date.parse(payment.date_approved || '') || Date.now(),
     custom: { currency: payment.currency_id || 'ARS', value: Number(payment.transaction_amount) || 0, content_name: 'Templo Ninja · acceso ilimitado' },
   });
