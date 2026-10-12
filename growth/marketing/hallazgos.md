@@ -8,7 +8,12 @@
 | MK-004 | 2026-10-07 | `velocidad` trae practicantes baratos (ARS 258) pero solo 7 de 116 ven precios | investigar más (BL-002 lo prueba) | — |
 | MK-005 | 2026-10-07 | El conjunto gasta ~52% del presupuesto y no sale del aprendizaje (7 resultados) | **descartado** 2026-10-07 (BL-017; misma causa que MK-003) | — |
 | MK-006 | 2026-10-07 | Campaña Profesional activa sin datos legibles en Meta; `pro-a`/`pro-b` solo con cargas automáticas | investigar más | — |
+| MK-007 | 2026-10-12 | `velocidad`: practicantes a ARS 105 y 37 ven precios, pero 0 clics en pagar | investigar más | — |
+| MK-008 | 2026-10-12 | Los 6 Reels cuestan ~6,6 veces más por practicante que `velocidad` (ARS 695 vs 105); aún sin volumen | investigar más | — |
+| MK-009 | 2026-10-12 | `iq` mezcla Meta y Google (utm_source) y el gasto por anuncio del acumulado no cierra con la campaña | investigar más | — |
+
+Actualizaciones 2026-10-12: MK-004 se reemplaza por MK-007; MK-005 sin acción (gasto 82% del presupuesto de $6.000); MK-006 cerrado de hecho (campaña Profesional pausada, gasto 0).
 
 No vuelvas a proponer un hallazgo descartado salvo que haya evidencia nueva y fuerte; si es así, decilo explícitamente.
 
-Detalle en `informes/2026-10-05.md` y `informes/2026-10-07.md`.
+Detalle en `informes/2026-10-05.md`, `informes/2026-10-07.md` y `informes/2026-10-12.md`.
