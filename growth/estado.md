@@ -1,65 +1,59 @@
 # Estado de Growth — Templo Ninja
 
-Última actualización: 2026-10-07 (coordinador, semana del 2026-10-07).
+Última actualización: 2026-10-12 (coordinador, semana del 2026-10-12).
 
 ## Cuello de botella actual
-**De ver precios a comprar, y no sabemos si se compra:** `payment_succeeded` nunca llegó a PostHog (BL-013). Últimos 7 días hasta el 2026-10-07 (PostHog, proyecto 642163, usuarios únicos; producto 2026-10-07):
+**De ver precios a hacer clic en pagar, y la vuelta al día siguiente.** Últimos 7 días hasta el 12/10 (PostHog, proyecto 642163, usuarios únicos; producto 2026-10-12), contra los 7 anteriores:
 
-| Paso | Usuarios |
-| --- | --- |
-| Visitas (`$pageview`) | 253 |
-| Empezaron una práctica | 62 |
-| Terminaron una práctica | 47 |
-| Vieron precios (`pricing_viewed`) | 26 (19 por límite sin cuenta, 7 por "upgrade") |
-| Clic en pagar (`checkout_clicked`) | 7 (5 desde computadora sin UTM, probables pruebas propias) |
-| Llegaron a Mercado Pago (`checkout_started`) | 3 |
-| Pagaron (`payment_succeeded`) | 0 (evento sin medición confirmada) |
+| Paso | Esta semana | Semana anterior |
+| --- | --- | --- |
+| Visitas (`$pageview`; unas 60 son automáticas) | 739 | 118 |
+| Empezaron una práctica | 299 | 28 |
+| Terminaron una práctica | 204 | 24 |
+| Vieron precios (`pricing_viewed`; 47 por límite, 12 por "upgrade") | 56 | 14 |
+| Clic en pagar (`checkout_clicked`) | 3 (ninguno desde un anuncio) | 3 |
+| Llegaron a Mercado Pago | 3 | 2 |
+| Pagaron (`payment_succeeded`) | 1 ($4.900 el 7/10, sin UTM; puede ser una prueba propia) | 0 |
 
-Gasto en Meta del 1 al 7/10: ARS 26.106 (marketing 2026-10-07); contribución marginal de la semana: ARS -26.106 si los ingresos fueron 0 (a confirmar contra Mercado Pago). Por anuncio (primera visita, 1 al 7/10): `velocidad` 116 usuarios, 43 practican, 7 ven precios, 1 clic en pagar (ARS 258 por practicante); `iq` 69 usuarios, 15 practican, 11 ven precios, 2 clics en pagar (ARS 889 por practicante). Retención: 0 de 41 practicantes con día siguiente medible volvió.
+- **Anuncio `velocidad`** (6 al 12/10, marketing): ARS 25.376 (74% del gasto), 462 usuarios, 241 practican (ARS 105 por practicante, antes 258), 37 ven precios, **0 clic en pagar**.
+- **Vuelta:** 12 de 522 personas (2%) volvieron otro día (producto); por cohortes de practicantes del 6 al 10/10, 9 de 208 (4,3%) volvieron al día siguiente (marketing). Parte se pierde por medición (el navegador de Instagram no comparte almacenamiento).
+- **Gasto en Meta 6 al 12/10:** ARS 34.253. Ingresos: ARS 4.900 (bruto, un pago). Contribución marginal: **−ARS 29.353**.
 
-## Experimentos en curso
+## Experimentos
+**Cerrados el 11/10 por Facundo (PR #54), sin veredicto por la regla escrita:**
+- `iq-desafio-directo` (BL-001): la regla pedía 60 por grupo o 3 semanas (26/10); se cerró antes. Expuestos: control 6, test 11; clic en pagar 0 y 1 (Fisher exacto p = 1,0). **Sin diferencia medible.** Queda la versión original.
+- `precio-oferta-24h`: control 13, test 14, 0 clic en pagar en ambos. **Sin ganador.** Vuelve el precio base.
 
-### `iq-desafio-directo` (OP-001), desde 2026-10-05
-- **Quién:** visitantes del anuncio `iq` (`utm_content=iq`), 50/50 con el flag de PostHog. Solo cuentan los que además interactúan de verdad (`iq_exp_activated`): las cargas automáticas de Instagram, Facebook y Meta no entran (UX-001).
-- **Cambio (`test`):** el botón principal de Ninja mental lleva al desafío de 5 minutos, y debajo del IQ aparece el plan ilimitado ($4.900, pago único). El IQ sigue siendo gratis.
-- **Métrica que decide:** % de visitantes del anuncio que hacen clic en pagar (`checkout_clicked`). Línea de base: 1 de 42.
-- **Señal temprana:** % que completa el desafío (`practice_completed` con `kind=desafio-5-min`). Línea de base: 1 de 13 que practican.
-- **Métrica final:** compras por visitante (`payment_succeeded`); con este volumen, no concluyente.
-- **Control de daños:** % de visitantes que empieza a practicar (`practice_started`).
-- **Duración:** hasta 60 visitantes por grupo o 3 semanas (hasta el 2026-10-26), lo que ocurra primero.
-- **Avance (2026-10-07):** 14 expuestos (control 6, test 8; `iq_exp_activated` 8 personas); clic en pagar 0 en control y 1 en test (Fisher exacto, p = 1,0). Sin veredicto. Ritmo de ~5 visitas reales por día de `iq`: llegaría a unos 50 por grupo en las 3 semanas, no a 60. Al 26/10 se aplica la regla con lo que haya; si hay menos de 30 por grupo se informa "sin diferencia medible" y se decide el paso siguiente con Facundo.
-- **Regla de decisión:** si `test` duplica o más el % de clic en pagar sin bajar el % que practica, pasa al 100% y se aplica lo mismo al anuncio `velocidad` (directo a la medición de 1 minuto). Si no se mueve, se descarta y se revisa el precio.
-- **Cambio en Meta (2026-10-05):** se pausó el anuncio `templo` (13 visitantes, ninguno practicó) para concentrar el presupuesto en `iq`.
+### `home-nueva` (A/B de la portada `/` contra `/nueva`), desde 2026-10-11 (PR #53)
+- **Quién:** todos los visitantes nuevos de `/` (la cookie `tn_home` los reparte 50/50; los robots ven siempre la actual). Cubre **todos los segmentos**, así que mientras corra **no arranca ningún otro experimento**.
+- **Cambio:** `nueva` = portada nueva (Mi dojo, desafíos rápidos, batallas, cinturones) en la misma dirección.
+- **Avance (PostHog, desde el 11/10 20:00 hasta el 12/10, personas por `home_ab`):** `actual` 40 expuestos, 19 empiezan, 14 terminan, 2 cuentas, 3 ven precios, 0 clic en pagar; `nueva` 61 expuestos, 27 empiezan, 21 terminan, 1 cuenta, 8 ven precios, 0 clic. Sin veredicto (volumen bajo, un día). Producto avisa que `home_ab_exposure` (37 + 60) y las personas por `home_ab` no coinciden del todo.
+- **Regla de decisión (propuesta por el coordinador, a aprobar por Facundo; se escribe antes de tener volumen):**
+  - **Métrica que decide:** % de expuestos que terminan una práctica (`practice_completed`). La conversión principal del README (`signed_up`) da 1 a 2 cuentas por grupo: no alcanza para decidir.
+  - **Control de daños:** cuentas (`signed_up`) más vistas de precios por expuesto no bajan a menos de la mitad que en `actual`.
+  - **Muestra y duración:** 200 expuestos reales por grupo o hasta el 2026-10-26, lo que ocurra primero.
+  - **Gana `nueva`** si termina práctica al menos 10 puntos porcentuales más que `actual` y el control de daños se cumple. **Pierde** si baja 10 puntos o más, o falla el control de daños. En otro caso, **sin diferencia**: se queda la más simple de mantener (`actual`) y lo decide Facundo.
+  - Se informa Fisher exacto y qué tan seguro es. Pasar al 100% (`AB_HOME_FORCE`) es una decisión de Facundo.
 
 ## Cambios recientes a vigilar
-- **2026-10-05, plan gratis de 3/6 a 5/10 prácticas por día.** Revisar el 19/10: clics en pagar por visitante real y vistas de precios por motivo. Si los clics bajan, volver a 3/6.
-
-- **2026-10-05, versión profesional (BL-010):** página `/profesional`, pista 🧩 Lógica y series (también la ven los dos grupos de `iq-desafio-directo`, que arranca el mismo día) y simulacro estilo Mercado Libre. Revisar el 19/10: `pro_cta_clicked`, prácticas de lógica y simulacros por empresa, y si llevan a ver precios y a pagar.
-
-## Propuesto para empezar (esperan a Facundo)
-
-### `velocidad-directo` (BL-002), segmento `velocidad`
-- **Hipótesis:** quien llega desde el anuncio `velocidad` hace la medición de 1 minuto que promete y ve la oferta junto al resultado; hoy 7 de 116 ven precios.
-- **Variantes (flag 50/50, solo con `utm_content=velocidad` y primera interacción real):** control = el flujo actual; `test` = el anuncio abre directo la medición de 1 minuto y, al terminar, aparece el plan ilimitado ($4.900, pago único) junto al resultado. La medición sigue siendo gratis.
-- **Métrica que decide:** % de visitantes reales que ven precios (`pricing_viewed`). Línea de base: 7 de 116 (6%).
-- **Señal temprana:** % que termina la medición de 1 minuto. **Control de daños:** % que empieza una práctica (línea de base 43 de 116, 37%).
-- **Muestra y duración:** 60 visitantes reales por grupo o 2 semanas (~19 reales por día, ~1 a 2 semanas), lo que ocurra primero.
-- **Regla (escrita antes de empezar):** **gana** si `test` duplica o más el % que ve precios y el % que practica no baja más de 10 puntos porcentuales; **pierde** si el % que practica baja más de 10 puntos o el % que ve precios es menor que en control; en cualquier otro caso, **sin diferencia** (se descarta y se revisa la oferta). Con 60 por grupo, pasar de 6% a 12% es una diferencia chica para detectar: se informa Fisher exacto y se dice qué tan seguro es.
+- **2026-10-05, plan gratis de 3/6 a 5/10 prácticas por día.** Revisar el 19/10: clics en pagar por visitante real y vistas de precios por motivo. Dato hasta hoy: 66 personas llegaron a 5 prácticas en el día, 47 vieron precios por el límite; 3 clics en pagar en la semana (misma cifra que antes del cambio, con 6 veces el tráfico).
+- **2026-10-05, versión profesional (BL-010):** `pro_cta_clicked` 9 eventos de 5 personas en 14 días, sin pagos asociados. La campaña "TN | Profesional | AR | Test01" figura **pausada**, gasto 0 (marketing). Revisar el 19/10.
+- **2026-10-09, 6 Reels nuevos** (conjunto "Vieron precios - Reels"): ARS 695 por practicante contra 105 de `velocidad` (poco volumen). Revisar el 19/10.
+- **Presupuesto de campaña** pasó de $5.000 a $6.000 por día (no consta quién; pregunta a Facundo).
 
 ## Próximo
-Ver `growth/backlog.md`. Esta semana (1 experimento y 3 arreglos):
-- **BL-013** (arreglo 1): medición de pagos, `api/_billing.js:80` y el aviso de Mercado Pago. Va primero.
-- **BL-002** (experimento nuevo, a aprobar).
-- **BL-014** (arreglo 2): LCP del celular en la primera pantalla de `index.html`.
-- **BL-015** (arreglo 3): camino de registro que no pasa por "crear cuenta".
-- **BL-003**: investigar el abandono al crear la cuenta (producto, sin video).
-- **Pospuesto:** BL-011 hasta cerrar `iq-desafio-directo` (~26/10).
+Ver `growth/backlog.md`. Esta semana: **ningún experimento nuevo** (`home-nueva` ocupa todos los segmentos), 3 arreglos y 1 investigación:
+- **BL-019** (arreglo 1, medición): medir bien la vuelta (cuenta, `$webview_app`, evento de retorno) en `analytics.js`.
+- **BL-018** (arreglo 2): velo del teclado en el celular (evento `typing_veil_shown` y texto), `app.js:787-788` e `index.html:295`.
+- **BL-015** (arreglo 3): camino de registro sin medir (17 `signed_up` contra 15 toques) y `feedback_sent` en 0 de 8 aperturas.
+- **BL-025** (investigar, producto, sin tocar la app): por qué 0 de las 56 personas que ven precios hacen clic en pagar.
+- **BL-002** (`velocidad-directo`): **postergado** hasta cerrar `home-nueva` y tener BL-025 (decisión de Facundo).
 
 ## Pedidos del coordinador
 Cada rutina responde primero lo que le toca, en una sección "Pedidos del coordinador" de su informe.
-- **Producto:** (1) BL-003 sin video: para quienes tocaron "crear cuenta" (`signup_prompt_clicked`), la secuencia de eventos siguiente y cuánto tardan en `signed_up`; (2) BL-015: ¿qué otro camino de registro existe? (3) BL-013: ¿el aviso de Mercado Pago llega a `api/_billing.js` y por qué `payment_succeeded` nunca se dispara?; (4) confirmar que `$exception` se captura.
-- **Marketing:** ARS por vista de precios y por clic en pagar de `velocidad` e `iq` por separado, y visitas reales por día de `/profesional` (campaña Profesional, MK-006) cuando Facundo confirme su estado.
-- **Research:** una fuente pública de 2026 (página de empleo de la empresa) para Mercado Libre, Techint, BBVA y Accenture; mientras tanto, nada de `/profesional` con empresas sin fuente leída completa.
+- **Producto:** (1) BL-025: de las personas que vieron precios (por límite y por "upgrade") y no hicieron clic en pagar, ¿qué hicieron con el diálogo (cerrar, tiempo abierto, scroll, volver a practicar)? Usar eventos y los resúmenes de sesión, por motivo de apertura. (2) Revisar la asignación de `home-nueva`: ¿por qué `home_ab_exposure` y las personas por `home_ab` no coinciden? (3) Verificar los arreglos de la semana (BL-019, BL-018, BL-015) si ya están aplicados.
+- **Marketing:** (1) ARS por vista de precios y por clic en pagar de `velocidad`, separando `iq` por `utm_source` (Meta contra Google, MK-009). (2) Dejar al 19/10 el balance de los Reels (100 clics o 20% de practicantes). (3) Qué anuncio y qué `utm` tiene el pago del 7/10 (el evento llegó sin UTM).
+- **Research:** cómo muestran Ratatype, Keybr y TypingClub el momento del bloqueo por límite diario (texto del diálogo, precio, qué ofrecen antes de pedir pago), solo con fuente pública enlazada y fecha. Sirve para BL-025. Las empresas argentinas (BL-006) quedan esperando a que una persona abra las páginas de Glassdoor.
 
 ## Estructura de Growth
 | Rutina | Cuándo (hora de Argentina) | Entrega | Instrucciones |
