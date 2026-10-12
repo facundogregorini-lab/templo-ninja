@@ -5,7 +5,7 @@ const { redis, HttpError, bearer, tokenKey, body, handler } = require('./_lib');
 const { clientContext, saveContext, sendEvent, cleanEventId } = require('./_meta');
 
 const EVENTS = {
-  ViewContent: data => ({ content_name: 'Templo Ninja · precios', content_category: data.reason === 'limit' ? 'limit' : 'upgrade' }),
+  ViewContent: data => ({ content_name: 'Templo Ninja · precios', content_category: ['limit', 'oferta'].includes(data.reason) ? data.reason : 'upgrade' }),
 };
 
 module.exports = handler(async req => {

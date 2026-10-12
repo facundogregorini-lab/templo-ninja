@@ -31,7 +31,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Inicio: Teclado offers Entrenar, Ver más and Medir velocidad', (await btns('#sections .nv-door:nth-child(1) .nv-ctas .btn')) === 'Entrenar | Ver más | Medir velocidad');
     check('…and Mente offers Entrenar, Desafío IQ, Desafío relámpago and Entrenar tests de empresas', (await btns('#sections .nv-door:nth-child(2) .nv-ctas .btn')) === 'Entrenar | Desafío IQ | Desafío relámpago | Entrenar tests de empresas' && (await p.getAttribute('#nvMentalCo', 'href')) === '/profesional');
     check('"Todos" has a box for every test, the lightning ones included', (await btns('.nv-all .nv-game b')) === 'Ninja del teclado | Figuras abstractas | Razonamiento numérico | Inglés para el trabajo | Lógica y series | Simulacro de entrevista | Desafío IQ ninja | Test del chimpancé | Memoria de números | Memoria visual | Reflejos | Tests de empresas' && !(await p.$('.nv-lightning-link')));
-    check('Apoyá el templo is a button in the header', await visible(p, '.nv-top #upgradeCta') && (await p.textContent('#upgradeCta')).includes('Apoyá'));
+    check('Unlimited access is a button in the header', await visible(p, '.nv-top #upgradeCta') && (await p.textContent('#upgradeCta')).includes('límites'));
     await p.click('#nvTkMore');
     check('Ver más opens the training of Teclado, like Entrenar', await onScreen(p, 'teclado') && await visible(p, '#path') && (await events(p, 'home_cta')).some(e => e.cta === 'teclado_ver_mas'));
     await p.click('[data-go="inicio"]'); await p.click('#nvMentalIq');
@@ -230,7 +230,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Anyone with the link sees names and scores only', viewed.battles[0].from === 'Facu' && viewed.battles[0].responses[0].name === 'Ana' && viewed.battles[0].responses[0].result === 'won' && !('user' in viewed.battles[0]));
     const mp = await open('/nueva', phone);
     check('On the phone, the four-tab bar opens Profile, with Dojo inside', await mp.isVisible('.nv-tabbar [data-go="dojo"]') && (await mp.textContent('.nv-tabbar [data-go="dojo"]')).includes('Perfil') && await mp.locator('.nv-tabbar a').count() === 4);
-    check('On the phone, Apoyá el templo stays in the header next to Perfil, without overflowing', await mp.isVisible('.nv-top #upgradeCta') && await mp.isVisible('.nv-top .nv-profile-link') && await mp.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.nv-top .nv-profile-link').getBoundingClientRect().right <= innerWidth));
+    check('On the phone, the unlimited access button stays in the header next to Perfil, without overflowing', await mp.isVisible('.nv-top #upgradeCta') && await mp.isVisible('.nv-top .nv-profile-link') && await mp.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.nv-top .nv-profile-link').getBoundingClientRect().right <= innerWidth));
     check('On the phone, "Todos" is a grid of two columns', await mp.evaluate(() => getComputedStyle(document.querySelector('.nv-all .nv-games')).gridTemplateColumns.split(' ').length === 2));
 
     // Progress checks of the course: starting point, control at lesson 6, summary at 10, blocks, final measurement

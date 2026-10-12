@@ -198,6 +198,8 @@ dialog::backdrop{background:rgba(10,14,18,.45)}
 .dlg .plan-free-title,.dlg .plan-or{color:var(--ink);font-weight:800}
 .plan-qr{display:grid;justify-items:center;gap:8px;text-align:center;margin:8px 0}.plan-qr #planQr{width:200px;max-width:100%;background:#fff;padding:6px;border-radius:12px}.plan-qr #planQr svg{display:block;width:100%;height:auto}
 .plan-or{border-top:1px solid var(--line);padding-top:14px}
+.dlg .plan-pay{margin-top:-8px;font-size:.85rem}
+.dlg .plan-inapp{padding:10px 12px;border-radius:10px;border:1px dashed var(--line);background:var(--panel);font-size:.85rem;color:var(--ink)}
 .pv{display:grid;gap:10px;padding:16px;border-radius:14px;border:2px solid var(--gold);background:var(--panel)}
 .pv-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .pv-old{color:var(--muted);text-decoration:line-through;font-weight:700;font-size:1.05rem}

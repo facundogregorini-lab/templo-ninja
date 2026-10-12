@@ -1,12 +1,18 @@
 // Freemium rules and Mercado Pago payments.
 // Free plan: FREE_PER_DAY practice sessions per day without an account, FREE_ACCOUNT_PER_DAY with a free account
-// (the reason to create one when the guest practices run out). Unlimited access: a one-time payment ("aporte al templo",
-// Checkout Pro) that never expires. Monthly subscriptions (preapproval API) from before still count until they end.
+// (the reason to create one when the guest practices run out). Unlimited access: a one-time payment (Checkout Pro)
+// that never expires. Monthly subscriptions (preapproval API) from before still count until they end.
+// Guests can pay too, before having an account: the payment's external_reference is then a guest reference
+// (g-<32 hex>, never a valid username), its access is kept in guestpaid:<ref>, and creating an account with that
+// reference (the "claim", which only the payer's browser and the return address know) moves it to paid:<name>.
 const { redis, HttpError } = require('./_lib');
 const { reportPurchase } = require('./_meta');
 const posthog = require('./_posthog');
 
 const DAY_MS = 86400e3, GRACE_MS = 3 * DAY_MS, FREE_PER_DAY = 5, FREE_ACCOUNT_PER_DAY = 10;
+const GUEST_RE = /^g-[a-f0-9]{32}$/, NAME_RE = /^[a-z0-9_.-]{3,20}$/;
+const isGuestRef = ref => GUEST_RE.test(String(ref || ''));
+const newGuestRef = () => 'g-' + require('node:crypto').randomBytes(16).toString('hex');
 const env = name => (process.env[name] || '').trim();
 
 function settings() {
@@ -44,6 +50,8 @@ async function mp(path, options = {}) {
 
 const readSub = async name => JSON.parse(await redis('GET', 'sub:' + name) || 'null');
 const readPaid = async name => JSON.parse(await redis('GET', 'paid:' + name) || 'null');
+const readGuestPaid = async ref => JSON.parse(await redis('GET', 'guestpaid:' + ref) || 'null');
+const readGuest = async ref => JSON.parse(await redis('GET', 'guest:' + ref) || 'null'); // { ph, created }: saved when the guest went to pay
 
 // What Mercado Pago keeps (its fee) and what reaches the account: for the contribution margin, not only the price.
 function money(payment) {
@@ -58,34 +66,47 @@ function money(payment) {
   };
 }
 
-// Stores an approved one-time payment: from then on, the account is unlimited for good.
+// Stores an approved one-time payment: from then on, the account (or the guest's reference) is unlimited for good.
 // The first time it is seen (webhook or coming back from paying, whichever is first) it is reported to Meta and PostHog.
 // A refunded or charged back payment takes the access away and is reported to PostHog once, as negative revenue.
 async function storePayment(payment) {
-  const name = String(payment.external_reference || '');
-  if (payment.metadata?.templo !== 'ilimitado' || !/^[a-z0-9_.-]{3,20}$/.test(name)) return null;
+  const ref = String(payment.external_reference || ''), guest = isGuestRef(ref);
+  if (payment.metadata?.templo !== 'ilimitado' || (!guest && !NAME_RE.test(ref))) return null;
   const amount = Number(payment.transaction_amount) || 0, currency = payment.currency_id || 'ARS';
+  // A guest's payment counts for the account that claimed it, if any: that is whose access a refund takes away.
+  const owner = guest ? await redis('GET', 'guestclaim:' + ref) : ref;
+  const distinct = guest ? owner || (await readGuest(ref))?.ph || ref : ref; // PostHog: the person who paid, as the page knew them
   if (payment.status === 'refunded' || payment.status === 'charged_back') {
-    const paid = await readPaid(name);
-    if (paid && String(paid.id) === String(payment.id)) await redis('DEL', 'paid:' + name);
+    if (guest) { const gp = await readGuestPaid(ref); if (gp && String(gp.id) === String(payment.id)) await redis('DEL', 'guestpaid:' + ref); }
+    if (owner) { const paid = await readPaid(owner); if (paid && String(paid.id) === String(payment.id)) await redis('DEL', 'paid:' + owner); }
     if (await redis('SET', 'refund:' + payment.id, String(Date.now()), 'NX') === 'OK')
-      await posthog.capture(name, 'payment_refunded', { value: -amount, currency, reason: payment.status, provider: 'mercadopago', payment_id: String(payment.id) });
+      await posthog.capture(distinct, 'payment_refunded', { value: -amount, currency, reason: payment.status, provider: 'mercadopago', payment_id: String(payment.id), guest });
     return null;
   }
   if (payment.status !== 'approved') return null;
   const paid = { id: payment.id, amount, currency, date: Date.parse(payment.date_approved || '') || Date.now() };
-  const first = await redis('SET', 'paid:' + name, JSON.stringify(paid), 'NX') === 'OK';
-  if (!first) await redis('SET', 'paid:' + name, JSON.stringify(paid));
-  if (first) await Promise.all([reportPurchase(name, payment),
-    posthog.capture(name, 'payment_succeeded', { value: amount, currency, provider: 'mercadopago', payment_id: String(payment.id), ...money(payment) })]);
+  let first;
+  if (guest) {
+    // The payer's email, only to suggest it when that guest creates the account (never sent to analytics).
+    const email = String(payment.payer?.email || '').trim().toLowerCase().slice(0, 120);
+    const record = { ...paid, ...(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? { email } : {}) };
+    first = await redis('SET', 'guestpaid:' + ref, JSON.stringify(record), 'NX') === 'OK';
+    if (!first) await redis('SET', 'guestpaid:' + ref, JSON.stringify(record));
+    if (owner) await redis('SET', 'paid:' + owner, JSON.stringify(paid));
+  } else {
+    first = await redis('SET', 'paid:' + ref, JSON.stringify(paid), 'NX') === 'OK';
+    if (!first) await redis('SET', 'paid:' + ref, JSON.stringify(paid));
+  }
+  if (first) await Promise.all([reportPurchase(ref, payment),
+    posthog.capture(distinct, 'payment_succeeded', { value: amount, currency, provider: 'mercadopago', payment_id: String(payment.id), guest, ...money(payment) })]);
   return paid;
 }
 
-// Looks for an approved payment of this account (coming back from Mercado Pago, or a webhook that never arrived).
-async function findPayment(name) {
+// Looks for an approved payment of this account or guest reference (coming back from Mercado Pago, or a webhook that never arrived).
+async function findPayment(ref) {
   if (!settings().enabled) return null;
   try {
-    const found = await mp('/v1/payments/search?external_reference=' + encodeURIComponent(name) + '&status=approved&sort=date_created&criteria=desc');
+    const found = await mp('/v1/payments/search?external_reference=' + encodeURIComponent(ref) + '&status=approved&sort=date_created&criteria=desc');
     const approved = (found.results || []).find(p => p.status === 'approved' && p.metadata?.templo === 'ilimitado');
     return approved ? await storePayment(approved) : null;
   } catch (error) {
@@ -137,10 +158,39 @@ async function status(name, { forceRefresh = false } = {}) {
   return { premium: Boolean(sub && sub.paidUntil > Date.now()), sub };
 }
 
+// A guest's paid access: { premium, paid, email, claimedBy }. Asks Mercado Pago when told to (coming back from paying).
+async function guestStatus(ref, { forceRefresh = false } = {}) {
+  if (!isGuestRef(ref)) return { premium: false, paid: null };
+  let paid = await readGuestPaid(ref);
+  if (!paid && forceRefresh) { await findPayment(ref); paid = await readGuestPaid(ref); }
+  const claimedBy = paid ? await redis('GET', 'guestclaim:' + ref) : null;
+  return { premium: Boolean(paid), paid, email: paid?.email || null, claimedBy };
+}
+
+// Gives a guest's paid access to an account. Once: a reference claimed by one account can't be claimed by another.
+async function claimGuest(ref, name) {
+  const { paid } = await guestStatus(ref, { forceRefresh: true });
+  if (!paid || !NAME_RE.test(name)) return null;
+  const set = await redis('SET', 'guestclaim:' + ref, name, 'NX');
+  if (set !== 'OK' && await redis('GET', 'guestclaim:' + ref) !== name) return null;
+  const { email, ...plain } = paid; // the email stays with the guest record; the account keeps what any payment keeps
+  if (!await readPaid(name)) await redis('SET', 'paid:' + name, JSON.stringify(plain));
+  return plain;
+}
+
 // The pricing experiment "precio-oferta-24h" ended on 2026-10-11 with no winner: everyone pays the base price again.
-// Leftover offer:<name> keys in Redis are no longer read.
-async function priceFor() {
-  return { amount: settings().price, offer: null };
+// Leftover offer:<name> keys in Redis are no longer read. The one exception is the follow-up email's offer
+// (api/cron.js): promo:<name> = { amount, until }, a lower price for that account until a date, shown and charged as is.
+async function priceFor(name) {
+  const base = settings().price;
+  const promo = NAME_RE.test(name || '') && JSON.parse(await redis('GET', 'promo:' + name) || 'null');
+  if (promo && promo.until > Date.now() && promo.amount > 0 && promo.amount < base) return { amount: promo.amount, offer: { amount: promo.amount, regular: base, until: promo.until } };
+  return { amount: base, offer: null };
+}
+// The end of a gifted free trial of unlimited access (trial:<name>, set by api/cron.js), or 0 when there is none.
+async function trialUntil(name) {
+  const until = Number(await redis('GET', 'trial:' + name)) || 0;
+  return until > Date.now() ? until : 0;
 }
 const priceLabel = amount => '$ ' + Number(amount).toLocaleString('es-AR') + ' · pago único';
 
@@ -148,4 +198,5 @@ async function isPremium(name) {
   return !settings().enabled || (await status(name)).premium;
 }
 
-module.exports = { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, today, playsKey, mp, storeSubscription, storePayment, status, isPremium, priceFor, priceLabel };
+module.exports = { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, today, playsKey, mp, storeSubscription, storePayment, status, isPremium, priceFor, priceLabel,
+  isGuestRef, newGuestRef, guestStatus, claimGuest, trialUntil };

@@ -153,4 +153,7 @@ function handler(fn) {
   };
 }
 
-module.exports = { redis, HttpError, createSession, tokenKey, bearer, requireUser, hashPassword, checkPassword, body, handler };
+// When the account was last here (sign-in, coming back with a saved session, a practice): for the follow-up emails.
+const touch = name => redis('SET', 'seen:' + name, String(Date.now())).catch(() => null);
+
+module.exports = { redis, HttpError, createSession, tokenKey, bearer, requireUser, hashPassword, checkPassword, body, handler, touch };
