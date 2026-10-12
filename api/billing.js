@@ -3,10 +3,11 @@
 // one-time payment, with or without an account (a guest gets a claim reference) · { action: 'sync' }: asks Mercado Pago again (coming back from paying)
 // · { action: 'guest', claim }: a guest's paid access, by the claim reference that only that guest knows
 // · { action: 'claim', claim } (with a session): moves that paid access to the account
-const { redis, HttpError, requireUser, bearer, body, handler } = require('./_lib');
+const { redis, HttpError, requireUser, bearer, body, handler, touch } = require('./_lib');
 const { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, playsKey, mp, status, priceFor, priceLabel, isGuestRef, newGuestRef, guestStatus, claimGuest } = require('./_billing');
 const { metaSettings, purchaseId, clientContext, saveContext, sendEvent } = require('./_meta');
 const { googleSettings } = require('./_google');
+const { emailOn } = require('./_email');
 
 async function userInfo(name, options) {
   const s = settings();
@@ -61,7 +62,7 @@ function guestInfo(g) {
 
 module.exports = handler(async req => {
   const s = settings();
-  const base = { enabled: s.enabled, price: s.label, amount: s.price, currency: s.currency, freePerDay: FREE_PER_DAY, guestPerDay: FREE_PER_DAY, accountPerDay: FREE_ACCOUNT_PER_DAY, pixel: metaSettings().pixel, gads: googleSettings() };
+  const base = { enabled: s.enabled, price: s.label, amount: s.price, currency: s.currency, freePerDay: FREE_PER_DAY, guestPerDay: FREE_PER_DAY, accountPerDay: FREE_ACCOUNT_PER_DAY, pixel: metaSettings().pixel, gads: googleSettings(), emails: emailOn() };
 
   if (req.method === 'GET') {
     if (!bearer(req)) return base;
@@ -89,6 +90,7 @@ module.exports = handler(async req => {
   const name = await requireUser(req);
 
   if (data.action === 'play') {
+    await touch(name);
     if (!s.enabled || (await status(name)).premium) return { ok: true };
     const count = await redis('INCR', playsKey(name));
     if (count === 1) await redis('EXPIRE', playsKey(name), 2 * 86400);

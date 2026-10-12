@@ -5,7 +5,10 @@
 // email:<sha256> points to it, and logging in works with either. Registering with a plain username still works.
 // A guest who paid before having an account sends the payment's claim when registering (or logging in): the access
 // moves to the account (api/_billing.js).
-const { redis, HttpError, createSession, tokenKey, bearer, requireUser, hashPassword, checkPassword, body, handler } = require('./_lib');
+// With email on (api/_email.js): a welcome email with a link that signs in, {action: 'link', email} sends such a link
+// (to sign in without the password), and {action: 'magic', token} uses one.
+const { redis, HttpError, createSession, tokenKey, bearer, requireUser, hashPassword, checkPassword, body, handler, touch } = require('./_lib');
+const { accountEmail, sendWelcome, sendSignInLink, useSignInLink } = require('./_email');
 const { RIVALS } = require('./_rivals');
 const { clientContext, saveContext, sendEvent, sha256 } = require('./_meta');
 const { isGuestRef, claimGuest } = require('./_billing');
@@ -68,7 +71,7 @@ async function setDisplay(name, value) {
 }
 
 module.exports = handler(async req => {
-  if (req.method === 'GET') return { user: await user(await requireUser(req)) };
+  if (req.method === 'GET') { const name = await requireUser(req); await touch(name); return { user: await user(name) }; }
   if (req.method !== 'POST') throw new HttpError(405, 'Método no permitido.');
   const data = body(req);
 
@@ -80,8 +83,27 @@ module.exports = handler(async req => {
 
   if (data.action === 'display') return { user: await setDisplay(await requireUser(req), data.display) };
 
+  // A sign-in link from an email: one use, then it is gone.
+  if (data.action === 'magic') {
+    const name = await useSignInLink(data.token);
+    if (!name || !await redis('GET', 'user:' + name)) throw new HttpError(401, 'Ese link ya se usó o venció. Pedí otro desde "Entrar".');
+    await touch(name);
+    const claimed = isGuestRef(data.claim) ? Boolean(await claimGuest(data.claim, name)) : false;
+    return { token: await createSession(name), user: await user(name), claimed };
+  }
+
+  // "Mandame un link": the same answer whether the email has an account or not (nobody learns which emails are here).
+  if (data.action === 'link') {
+    const email = String(data.email || '').trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Escribí tu email para mandarte el link.');
+    const name = await redis('GET', emailKey(email));
+    if (name && await redis('SET', 'linkwait:' + name, '1', 'EX', 120, 'NX') === 'OK') await sendSignInLink(name, await accountEmail(name) || email);
+    return { ok: true };
+  }
+
   const pass = password(data);
   const claim = isGuestRef(data.claim) ? data.claim : null; // a guest who already paid
+
 
   if (data.action === 'register') {
     const login = String(data.email ?? data.username ?? '').trim().toLowerCase();
@@ -100,7 +122,8 @@ module.exports = handler(async req => {
     const claimed = claim ? Boolean(await claimGuest(claim, name)) : false;
     // The page's CompleteRegistration, also from the server (same event id), now that the account exists
     const ctx = clientContext(req, data.track);
-    await Promise.all([saveContext(name, ctx), sendEvent({ event: 'CompleteRegistration', id: data.track?.event_id, name, email, ctx, custom: { content_name: 'Cuenta Templo Ninja' } })]);
+    await Promise.all([saveContext(name, ctx), sendEvent({ event: 'CompleteRegistration', id: data.track?.event_id, name, email, ctx, custom: { content_name: 'Cuenta Templo Ninja' } }),
+      touch(name), email ? sendWelcome(name, email) : null]);
     return { token: await createSession(name), user: { name, display: name }, claimed };
   }
 
@@ -119,6 +142,7 @@ module.exports = handler(async req => {
       throw new HttpError(401, byEmail ? 'Email o contraseña incorrectos.' : 'Usuario o contraseña incorrectos.');
     }
     await redis('DEL', failKey);
+    await touch(name);
     const claimed = claim ? Boolean(await claimGuest(claim, name)) : false;
     return { token: await createSession(name), user: await user(name), claimed };
   }

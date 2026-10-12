@@ -905,6 +905,7 @@ async function signedIn(token, name, display) {
       : 'Estamos esperando la confirmación de Mercado Pago. Puede tardar unos minutos.');
   }
   if (planAfterLogin) { planAfterLogin = false; if (limited()) showPlan('upgrade'); }
+  if (new URLSearchParams(location.search).get('utm_campaign') === 'oferta' && limited() && billing.offer) showPlan('oferta');
 }
 function signedOut(msg) {
   if (auth.name) tn.reset();
@@ -930,6 +931,7 @@ function setAuthMode(m) {
   $('authLead').textContent = m === 'login'
     ? 'Tus lecciones, estrellas y sesiones de práctica quedan guardadas para seguir desde cualquier computadora.'
     : 'Solo tu email y una contraseña. Lo que ya practicaste en este navegador se suma a tu cuenta.';
+  $('authLink').hidden = !(m === 'login' && billing.emails); // a link by email, to get in without the password
   $('authErr').textContent = '';
 }
 function openAuth() { setAuthMode('login'); $('pass').value = ''; $('authDlg').showModal(); $('user').focus(); }
@@ -965,6 +967,14 @@ $('acctBtn').onclick = () => {
 };
 document.querySelectorAll('#authMode button').forEach(b => b.onclick = () => setAuthMode(b.dataset.v));
 $('authCancel').onclick = () => { signupFrom = null; $('authDlg').close(); };
+$('authLink').onclick = async () => {
+  const email = $('user').value.trim();
+  if (!email.includes('@')) { $('authErr').textContent = 'Escribí tu email arriba y tocá de nuevo: te mandamos el link ahí.'; $('user').focus(); return; }
+  $('authLink').disabled = true;
+  try { await api('auth', { action: 'link', email }); tn.capture('signin_link_requested'); $('authDlg').close(); toast('Listo: si hay una cuenta con ese email, te llega un link para entrar. Revisá también la carpeta de spam.'); }
+  catch (err) { $('authErr').textContent = err.message; }
+  $('authLink').disabled = false;
+};
 $('authForm').onsubmit = async e => {
   e.preventDefault();
   $('authErr').textContent = ''; $('authSubmit').disabled = true;
@@ -981,7 +991,7 @@ $('authForm').onsubmit = async e => {
     tn.capture(authMode === 'register' ? 'signed_up' : 'logged_in', { source: signupFrom || 'account', method: login.includes('@') ? 'email' : 'username' });
     const left = limited() ? Math.max(0, billing.freePerDay - usedToday()) : 0, more = signupFrom && left ? ` Tenés ${left} ${left === 1 ? 'práctica' : 'prácticas'} más hoy: ¡a seguir!` : '';
     toast(r.claimed ? `Listo: tu acceso ilimitado quedó guardado en tu cuenta ✦ Entrás con ${authMode === 'register' && login.includes('@') ? 'tu email' : r.user.name} desde cualquier dispositivo.`
-      : (authMode === 'register' ? `Cuenta creada. Tu progreso se guarda en ${r.user.name}.` : `Hola, ${shownName()}. Seguimos donde dejaste.`) + more);
+      : (authMode === 'register' ? `Cuenta creada. Tu progreso se guarda en ${r.user.name}.${billing.emails && login.includes('@') ? ' Te mandamos un mail con un link para volver.' : ''}` : `Hola, ${shownName()}. Seguimos donde dejaste.`) + more);
     signupFrom = null;
   } catch (err) { $('authErr').textContent = err.message; }
   $('authSubmit').disabled = false;
@@ -1710,6 +1720,7 @@ function showPlan(reason) {
     : outOfGuest ? `Ya usaste tus ${billing.freePerDay} prácticas gratis de hoy sin cuenta.`
     : reason === 'limit' ? `Usaste tus ${billing.freePerDay} prácticas gratis de hoy. Seguí ahora sin límites, o volvé mañana.`
     : reason === 'iq_result' ? 'Tu IQ ninja sube con práctica: figuras, números e inglés sin límite diario, para siempre.'
+    : reason === 'oferta' ? 'Tenés un precio especial por unas horas: entrená sin límites, para siempre.'
     : used ? `Hoy usaste ${Math.min(used, billing.freePerDay)} de tus ${billing.freePerDay} prácticas gratis.`
     : `Con el plan gratis tenés ${billing.freePerDay} prácticas por día${offer ? ` (${billing.accountPerDay} con tu cuenta gratis)` : ''}.`;
   $('planFree').hidden = !offer; $('planOr').hidden = !offer;
@@ -1725,7 +1736,17 @@ function showPlan(reason) {
   // On a computer, also the phone: that is where most people have Mercado Pago open (the first purchase was paid that way).
   $('planPhone').hidden = !(canBuy && matchMedia('(hover: hover) and (pointer: fine)').matches);
   $('planQrBox').hidden = true; stopQrWatch();
-  $('planOffer').hidden = true; // the 24-hour offer (precio-oferta-24h) ended: the base price for everyone
+  // The follow-up email's offer (api/cron.js): this account's price until a date. The 24-hour experiment ended.
+  const promo = canBuy && billing.offer && billing.offer.until > Date.now() ? billing.offer : null;
+  $('planOffer').hidden = !promo; $('planPrice').hidden = $('planPrice').hidden || Boolean(promo);
+  if (promo) {
+    const ar = new Date(promo.until - 3 * 36e5).toISOString(); // Argentina time
+    $('offerOld').textContent = '$ ' + Number(promo.regular).toLocaleString('es-AR');
+    $('offerSave').textContent = '−' + Math.round(100 - promo.amount / promo.regular * 100) + '%';
+    $('offerNew').textContent = moneyLabel() + ' · pago único';
+    $('planOffer').querySelector('.pv-cd').hidden = true;
+    $('offerNote').textContent = `Tu precio especial vale hasta el ${ar.slice(8, 10)}/${ar.slice(5, 7)} a las ${ar.slice(11, 16)}.`;
+  }
   planLeaving = false;
   if (!$('planDlg').open) $('planDlg').showModal();
   // The keyboard starts on what the modal asks for (not on the first link, the terms).
@@ -2049,7 +2070,15 @@ applyLayout(); applyKbMode(); renderHome(); renderAccountBtn();
 addEventListener('hashchange', () => { if (NINJA_HASH.test(location.hash) && mode !== 'quiz' && mode !== 'typing') goCog(); });
 renderRanking();
 // Without a saved session there is nothing to check: guests skip the request (and its 401).
-(auth.token ? api('auth') : Promise.reject(Object.assign(new Error('guest'), { status: 401 }))).then(r => signedIn(auth.token, r.user.name, r.user.display)).catch(err => {
+const magic = new URLSearchParams(location.search).get('entrar');
+if (magic) { const u = new URL(location.href); u.searchParams.delete('entrar'); window.history.replaceState(null, '', u.pathname + u.search + u.hash); }
+const session = () => auth.token ? api('auth') : Promise.reject(Object.assign(new Error('guest'), { status: 401 }));
+(magic ? api('auth', { action: 'magic', token: magic, ...(storedClaim() ? { claim: storedClaim() } : {}) }).then(r => {
+  auth.token = r.token; if (r.claimed) forgetClaim();
+  tn.capture('signin_link_used', { campaign: new URLSearchParams(location.search).get('utm_campaign') || null });
+  toast(`Hola, ${r.user.display || r.user.name}. ¡A entrenar!`);
+  return r;
+}).catch(err => { toast(err.message); return session(); }) : session()).then(r => signedIn(auth.token, r.user.name, r.user.display)).catch(err => {
   if (err.status === 401) { if (auth.token) signedOut(); return; }
   if (err.status === 0 || err.status === 404) { $('acctBtn').hidden = true; $('foot').textContent = 'Tu progreso se guarda en este navegador.'; }
 }).finally(() => {

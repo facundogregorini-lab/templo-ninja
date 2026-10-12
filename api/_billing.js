@@ -179,9 +179,13 @@ async function claimGuest(ref, name) {
 }
 
 // The pricing experiment "precio-oferta-24h" ended on 2026-10-11 with no winner: everyone pays the base price again.
-// Leftover offer:<name> keys in Redis are no longer read.
-async function priceFor() {
-  return { amount: settings().price, offer: null };
+// Leftover offer:<name> keys in Redis are no longer read. The one exception is the follow-up email's offer
+// (api/cron.js): promo:<name> = { amount, until }, a lower price for that account until a date, shown and charged as is.
+async function priceFor(name) {
+  const base = settings().price;
+  const promo = NAME_RE.test(name || '') && JSON.parse(await redis('GET', 'promo:' + name) || 'null');
+  if (promo && promo.until > Date.now() && promo.amount > 0 && promo.amount < base) return { amount: promo.amount, offer: { amount: promo.amount, regular: base, until: promo.until } };
+  return { amount: base, offer: null };
 }
 const priceLabel = amount => '$ ' + Number(amount).toLocaleString('es-AR') + ' · pago único';
 
