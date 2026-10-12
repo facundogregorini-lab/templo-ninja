@@ -905,14 +905,16 @@ async function signedIn(token, name, display) {
       : 'Estamos esperando la confirmación de Mercado Pago. Puede tardar unos minutos.');
   }
   if (planAfterLogin) { planAfterLogin = false; if (limited()) showPlan('upgrade'); }
-  if (new URLSearchParams(location.search).get('utm_campaign') === 'oferta' && limited() && billing.offer) showPlan('oferta');
+  const campaign = new URLSearchParams(location.search).get('utm_campaign');
+  if (campaign === 'oferta' && limited() && billing.offer) showPlan('oferta');
+  if (campaign === 'regalo' && trialActive()) toast(`🎁 Tenés acceso ilimitado de regalo hasta el ${arWhen(billing.trialUntil)}. ¡A entrenar!`);
 }
 function signedOut(msg) {
   if (auth.name) tn.reset();
   auth = { token: null, name: null, display: null }; history = [];
   try { localStorage.removeItem(TOKEN); } catch {}
   S.lessons = {}; S.test = null; S.tests = []; S.cog = {}; S.sims = []; S.ninja = { best: null, runs: [] }; save();
-  Object.assign(billing, { premium: false, plays: 0, gift: false, lifetime: false, subscription: null, freePerDay: billing.guestPerDay });
+  Object.assign(billing, { premium: false, plays: 0, gift: false, lifetime: false, subscription: null, trialUntil: 0, offer: null, freePerDay: billing.guestPerDay });
   renderAccountBtn(); renderHome(); renderPlanNote(); loadRanking();
   if (msg) toast(msg);
 }
@@ -1572,7 +1574,11 @@ let billing = { enabled: false, premium: false, plays: 0, price: '', freePerDay:
 // Guests: a few practices in this browser. A free account gets more (accountPerDay), so running out offers one first.
 const freeAccountOffer = () => limited() && !auth.name && billing.accountPerDay > billing.guestPerDay;
 const PLAYS_KEY = 'teclado-ciego-plays', arDay = () => new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
-const limited = () => billing.enabled && !billing.premium;
+// A free trial of unlimited access, gifted by the follow-up email: no daily limit until then, and paying stays possible.
+const trialActive = () => billing.trialUntil > Date.now();
+const limited = () => billing.enabled && !billing.premium && !trialActive();
+// "14/10 a las 11:00", in Argentina (UTC-3, no daylight saving).
+const arWhen = ts => { const d = new Date(ts - 3 * 36e5).toISOString(); return `${d.slice(8, 10)}/${d.slice(5, 7)} a las ${d.slice(11, 16)}`; };
 function guestPlays() { try { const p = JSON.parse(localStorage.getItem(PLAYS_KEY)); return p?.day === arDay() ? p.n : 0; } catch { return 0; } }
 const usedToday = () => auth.name ? billing.plays : guestPlays();
 /* Paying without an account: the server gives a claim reference (g-…) for that payment. This browser keeps it, and the
@@ -1584,7 +1590,7 @@ function storedClaim() { try { const c = localStorage.getItem(CLAIM_KEY); return
 function keepClaim(c) { try { if (CLAIM_RE.test(c || '')) localStorage.setItem(CLAIM_KEY, c); } catch {} }
 function forgetClaim() { try { localStorage.removeItem(CLAIM_KEY); } catch {} }
 async function loadBilling(sync) {
-  try { Object.assign(billing, await api('billing', auth.name && sync ? { action: 'sync' } : undefined)); } catch {}
+  try { Object.assign(billing, { trialUntil: 0, offer: null }, await api('billing', auth.name && sync ? { action: 'sync' } : undefined)); } catch {}
   const claim = !auth.name && storedClaim();
   if (claim) try {
     const g = await api('billing', { action: 'guest', claim, sync: Boolean(sync) });
@@ -1693,11 +1699,18 @@ function countPractice() {
 function renderPlanNote() {
   $('upgradeLabel').innerHTML = billing.premium ? 'Ninja <span class="cta-long">ilimitado</span>' : 'Sin <span class="cta-long">límites</span>';
   const note = $('planNote');
+  if (billing.enabled && !billing.premium && trialActive()) { // the gifted trial: when it ends, and the way to keep it
+    note.hidden = false;
+    note.innerHTML = `✦ Acceso ilimitado de regalo hasta el ${arWhen(billing.trialUntil)} · <button type="button">Quedátelo para siempre</button>`;
+    note.querySelector('button').onclick = () => showPlan('trial');
+    if ($('dojoCount').dataset.ready) renderDojo();
+    return;
+  }
   note.hidden = !limited();
   if ($('dojoCount').dataset.ready) renderDojo(); // the plan's meter also shows when the free practices run out
   if (note.hidden) return;
   const left = Math.max(0, billing.freePerDay - usedToday());
-  note.innerHTML = `Plan gratis: ${left ? `te ${left === 1 ? 'queda 1 práctica' : `quedan ${left} prácticas`} de ${billing.freePerDay} hoy` : 'ya usaste tus prácticas de hoy'}${auth.name && billing.bonus > 0 ? ' (con tus extra de regalo 🎁)' : ''} · <button type="button">Acceso ilimitado</button>`;
+  note.innerHTML = `Plan gratis: ${left ? `te ${left === 1 ? 'queda 1 práctica' : `quedan ${left} prácticas`} de ${billing.freePerDay} hoy` : 'ya usaste tus prácticas de hoy'} · <button type="button">Acceso ilimitado</button>`;
   note.querySelector('button').onclick = () => showPlan('upgrade');
 }
 // What a practice is, for the analytics events (no personal data).
@@ -1707,7 +1720,7 @@ function practiceInfo(ninja) {
 }
 function showPlan(reason) {
   planFrom = reason;
-  tn.capture('pricing_viewed', { reason, payments_on: billing.enabled, premium: billing.premium, logged_in: !!auth.name, used_today: usedToday() });
+  tn.capture('pricing_viewed', { reason, payments_on: billing.enabled, premium: billing.premium, trial: trialActive(), logged_in: !!auth.name, used_today: usedToday() });
   if (!billing.premium) trackBoth('ViewContent', { content_name: 'Templo Ninja · precios', content_category: reason }, { reason });
   // Also opened from the header CTA: without payments configured, or with the plan already active, it only informs.
   const canBuy = billing.enabled && !billing.premium;
@@ -1721,6 +1734,7 @@ function showPlan(reason) {
     : reason === 'limit' ? `Usaste tus ${billing.freePerDay} prácticas gratis de hoy. Seguí ahora sin límites, o volvé mañana.`
     : reason === 'iq_result' ? 'Tu IQ ninja sube con práctica: figuras, números e inglés sin límite diario, para siempre.'
     : reason === 'oferta' ? 'Tenés un precio especial por unas horas: entrená sin límites, para siempre.'
+    : reason === 'trial' && trialActive() ? `Tu acceso ilimitado de regalo vence el ${arWhen(billing.trialUntil)}. Quedátelo para siempre con un solo pago.`
     : used ? `Hoy usaste ${Math.min(used, billing.freePerDay)} de tus ${billing.freePerDay} prácticas gratis.`
     : `Con el plan gratis tenés ${billing.freePerDay} prácticas por día${offer ? ` (${billing.accountPerDay} con tu cuenta gratis)` : ''}.`;
   $('planFree').hidden = !offer; $('planOr').hidden = !offer;
@@ -1761,7 +1775,7 @@ let planLeaving = false;
 function planDismissed(via) { if (!planLeaving) tn.capture('pricing_dismissed', { reason: planFrom, via, logged_in: !!auth.name, in_app: IN_APP }); }
 function renderPlan() {
   const st = $('planStatus'), sub = billing.subscription;
-  $('upgrade').hidden = !limited();
+  $('upgrade').hidden = !(limited() || (billing.enabled && !billing.premium && trialActive()));
   st.textContent = !billing.enabled ? ''
     : billing.gift ? '✦ Plan Ilimitado (cortesía)'
     : billing.lifetime ? '✦ Acceso ilimitado para siempre. ¡Gracias por bancar el templo!'

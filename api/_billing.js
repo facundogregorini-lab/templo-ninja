@@ -187,6 +187,11 @@ async function priceFor(name) {
   if (promo && promo.until > Date.now() && promo.amount > 0 && promo.amount < base) return { amount: promo.amount, offer: { amount: promo.amount, regular: base, until: promo.until } };
   return { amount: base, offer: null };
 }
+// The end of a gifted free trial of unlimited access (trial:<name>, set by api/cron.js), or 0 when there is none.
+async function trialUntil(name) {
+  const until = Number(await redis('GET', 'trial:' + name)) || 0;
+  return until > Date.now() ? until : 0;
+}
 const priceLabel = amount => '$ ' + Number(amount).toLocaleString('es-AR') + ' · pago único';
 
 async function isPremium(name) {
@@ -194,4 +199,4 @@ async function isPremium(name) {
 }
 
 module.exports = { FREE_PER_DAY, FREE_ACCOUNT_PER_DAY, settings, today, playsKey, mp, storeSubscription, storePayment, status, isPremium, priceFor, priceLabel,
-  isGuestRef, newGuestRef, guestStatus, claimGuest };
+  isGuestRef, newGuestRef, guestStatus, claimGuest, trialUntil };

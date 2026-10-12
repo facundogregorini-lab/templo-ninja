@@ -1,9 +1,9 @@
 // Daily follow-up emails (Vercel Cron, vercel.json), for the accounts with an email that stopped coming back.
 // Two paths, by what the account did:
 //   - Never hit the daily free limit: EMAIL_REMIND_DAYS (3) days away → a reminder, with a link that signs them in.
-//   - Hit the limit and didn't pay: EMAIL_GIFT_DAYS (2) days away → GIFT_PRACTICES (15) extra practices, valid
-//     GIFT_DAYS (7) days; then, still away EMAIL_OFFER_DAYS (7) days → unlimited access at OFFER_PRICE (half the base
-//     price) for OFFER_HOURS (48).
+//   - Hit the limit and didn't pay: EMAIL_GIFT_DAYS (2) days away → GIFT_HOURS (48) hours of unlimited access, free;
+//     then, still away EMAIL_OFFER_DAYS (7) days → unlimited access for good at OFFER_PRICE (half the base price)
+//     for OFFER_HOURS (48).
 // Each email goes once per account, never to unlimited accounts or to whoever unsubscribed, and at most
 // EMAIL_MAX_PER_RUN (80) per day (Resend's free plan sends 100 a day; the welcome and sign-in emails need room too).
 // Vercel calls it with "Authorization: Bearer <CRON_SECRET>"; without that secret configured it does nothing.
@@ -19,7 +19,7 @@ function cronSettings() {
   return {
     secret: env('CRON_SECRET'),
     remindDays: n('EMAIL_REMIND_DAYS', 3), giftDays: n('EMAIL_GIFT_DAYS', 2), offerDays: n('EMAIL_OFFER_DAYS', 7),
-    giftPractices: Math.round(n('GIFT_PRACTICES', 15)), giftValidDays: n('GIFT_DAYS', 7),
+    giftHours: n('GIFT_HOURS', 48),
     offerPrice: n('OFFER_PRICE', Math.round(base * 0.5 / 50) * 50), offerHours: n('OFFER_HOURS', 48),
     maxPerRun: n('EMAIL_MAX_PER_RUN', 80),
   };
@@ -76,13 +76,13 @@ module.exports = handler(async req => {
       await redis('SET', 'promo:' + name, JSON.stringify({ amount: extra.amount, until: extra.until }), 'EX', Math.ceil(c.offerHours * 3600) + 86400);
     }
     if (step === 'regalo') {
-      extra = { count: c.giftPractices, until: Date.now() + c.giftValidDays * 86400e3 };
-      await redis('SET', 'bonus:' + name, String(extra.count), 'EX', Math.ceil(c.giftValidDays * 86400));
+      extra = { hours: c.giftHours, until: Date.now() + c.giftHours * 3600e3 };
+      await redis('SET', 'trial:' + name, String(extra.until), 'EX', Math.ceil(c.giftHours * 3600) + 86400);
     }
     const ok = await sendFollowUp(name, email, step, extra);
     if (!ok) { // not sent: nothing given, and it is tried again tomorrow
       if (step === 'oferta') await redis('DEL', 'promo:' + name);
-      if (step === 'regalo') await redis('DEL', 'bonus:' + name);
+      if (step === 'regalo') await redis('DEL', 'trial:' + name);
       continue;
     }
     const steps = parse(await redis('GET', 'mailsent:' + name)) || {};

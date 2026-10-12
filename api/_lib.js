@@ -52,7 +52,6 @@ function memoryCommand([cmd, key, ...args]) {
     }
     case 'DEL': return memory.delete(key) ? 1 : 0;
     case 'INCR': { const n = Number(memory.get(key) || 0) + 1; memory.set(key, String(n)); return n; }
-    case 'DECR': { const n = Number(memory.get(key) || 0) - 1; memory.set(key, String(n)); return n; }
     case 'EXPIRE': return 1;
     case 'SCAN': { // all at once: "SCAN 0 MATCH <glob> COUNT n"
       const glob = new RegExp('^' + (args[1] || '*').replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');

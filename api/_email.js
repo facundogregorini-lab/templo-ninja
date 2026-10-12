@@ -121,8 +121,9 @@ async function sendSignInLink(name, email) {
 }
 
 // The follow-ups of api/cron.js, by what the person did:
-//   recordatorio: signed up and never hit the daily limit · regalo: hit it and didn't pay, gets extra practices
-//   (extra = { count, until }) · oferta: hit it, got the gift, still away: the price for a few hours (extra = { amount, regular, until, hours }).
+//   recordatorio: signed up and never hit the daily limit · regalo: hit it and didn't pay, gets unlimited access for a
+//   few hours (extra = { hours, until }) · oferta: hit it, got the gift, still away: the price for a few hours
+//   (extra = { amount, regular, until, hours }).
 async function sendFollowUp(name, email, step, extra = {}) {
   const url = await signInLink(name, step);
   const price = n => '$ ' + Number(n).toLocaleString('es-AR');
@@ -135,12 +136,12 @@ async function sendFollowUp(name, email, step, extra = {}) {
       'Hoy tenés tus prácticas gratis listas. Entrá directo, sin contraseña.'],
     button: 'Seguir entrenando',
   } : step === 'regalo' ? {
-    subject: `Te regalamos ${extra.count} prácticas extra 🎁`,
-    title: `${extra.count} prácticas extra, de regalo`,
-    paragraphs: ['La última vez llegaste al límite de prácticas gratis del día. Para que sigas entrenando, te sumamos ' + extra.count + ' prácticas extra a tu cuenta.',
-      'Se usan cuando terminás las del día: así podés hacer una sesión larga antes de tu próxima entrevista.'],
-    button: 'Usar mis prácticas extra',
-    after: [`Las prácticas extra valen hasta el ${day}.`],
+    subject: `${extra.hours} horas de acceso ilimitado, de regalo 🎁`,
+    title: `Entrená sin límites, ${extra.hours} horas gratis`,
+    paragraphs: ['La última vez llegaste al límite de prácticas gratis del día. Para que sigas entrenando, te regalamos ' + extra.hours + ' horas de acceso ilimitado: simulacros de entrevista, tests por empresa, lecciones y desafíos, sin tope.',
+      'Ya está activado en tu cuenta. Entrá directo, sin contraseña.'],
+    button: 'Entrenar sin límites',
+    after: [`El regalo vale hasta el ${day} a las ${time} (hora de Argentina). No tenés que pagar nada ni cargar una tarjeta.`],
   } : {
     subject: `${Math.round(100 - extra.amount / extra.regular * 100)}% off por ${extra.hours} horas: acceso ilimitado a ${price(extra.amount)}`,
     title: `Entrená sin límites a ${price(extra.amount)}`,

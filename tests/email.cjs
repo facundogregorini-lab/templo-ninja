@@ -80,13 +80,17 @@ async function idle(name, days) {
     const remind = mails.slice(before).find(m => m.to[0] === 'cami@example.com'), gift = mails.slice(before).find(m => m.to[0] === 'dani@example.com');
     check('the job sends both', run.sent === 2 && remind?.tags[0].value === 'recordatorio' && gift?.tags[0].value === 'regalo');
     check('follow-ups carry a one-click unsubscribe and a sign-in link', remind.headers['List-Unsubscribe'].includes('/api/email?baja=cami') && remind.headers['List-Unsubscribe-Post'] && tokenIn(remind) && remind.html.includes('No quiero recibir'));
-    check('the gift says how many extra practices and until when', gift.subject.includes('15 prácticas extra') && /valen hasta el \d\d\/\d\d/.test(gift.text));
+    check('the gift is 48 hours of unlimited access, saying until when', gift.subject.startsWith('48 horas de acceso ilimitado') && /hasta el \d\d\/\d\d a las \d\d:\d\d/.test(gift.text) && gift.html.includes('utm_campaign=regalo'));
 
-    // The gift is real: past today's free practices, 15 more
+    // The gift is real: no daily limit for 48 hours, and paying is still possible
     const daniPlan = await api('billing', undefined, dani.token);
-    check('the account sees its extra practices in today\'s limit', daniPlan.bonus === 15 && daniPlan.freePerDay === 25 && daniPlan.plays === 10);
-    const codes = []; for (let i = 0; i < 16; i++) codes.push((await api('billing', { action: 'play' }, dani.token)).status);
-    check('15 extra practices, then the limit again', codes.join() === '200,'.repeat(15) + '402' && (await api('billing', undefined, dani.token)).bonus === 0);
+    const hours = (daniPlan.trialUntil - Date.now()) / 36e5;
+    check('the account has unlimited access for 48 hours, without being a paid account', hours > 47.9 && hours <= 48 && daniPlan.premium === false && !daniPlan.lifetime);
+    const codes = []; for (let i = 0; i < 12; i++) codes.push((await api('billing', { action: 'play' }, dani.token)).status);
+    check('during the gift there is no daily limit', codes.every(c => c === 200));
+    check('during the gift the account can still pay', (await api('billing', { action: 'buy' }, dani.token)).url && prefs.at(-1).items[0].unit_price === 4900);
+    await redis('SET', 'trial:dani', String(Date.now() - 1000));
+    check('when the gift ends, the daily limit is back', (await api('billing', { action: 'play' }, dani.token)).status === 402 && !(await api('billing', undefined, dani.token)).trialUntil);
     check('the reminder is not sent twice, and the gift is not the offer yet', (await cron()).sent === 0);
 
     // Still away after the gift: half price for 48 hours
