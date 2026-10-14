@@ -464,21 +464,8 @@
     cta('nvTkMore', 'teclado_ver_mas', () => goTo('teclado', { sub: 'entrenar' }));
     cta('scNinja', 'mente_entrenar', () => goTo('mente', { sub: 'entrenar' }));
     cta('nvMentalIq', 'mente_desafio_iq', () => goTo('mente', { sub: 'desafio' }));
-    cta('scMax', 'mente_relampago', () => goTo('desafios'));
+    cta('scMax', 'mente_batallas', () => goTo('dojo', { sub: 'batallas' }));
     cta('nvMentalCo', 'mente_empresas'); // a link to /profesional
-    // "Todos": every training and test of the temple (the lightning challenges are drawn by renderTiles)
-    const ALL = {
-      teclado: () => goTo('teclado', { sub: 'entrenar' }),
-      sim: () => tnApp.startQuiz('sim'),
-      iq: () => tnApp.startQuiz('ninja'),
-      empresas: null, // a link to /profesional
-    };
-    document.querySelectorAll('[data-all]').forEach(t => t.addEventListener('click', () => {
-      const k = t.dataset.all; capture('home_all_tile', { tile: k });
-      if (k in ALL) return ALL[k]?.();
-      document.querySelector(`#cogTracks button[data-v="${k}"]`)?.click(); // a track of Ninja mental
-      goTo('mente', { sub: 'entrenar' });
-    }));
     $id('nvHeroSpeed').onclick = () => { if (touchOnly()) { capture('quick_start', { kind: 'celu' }); openGame('celu'); } else { capture('quick_start', { kind: 'speed' }); tnApp.start('test'); } };
     $id('nvHeroIq').onclick = $id('nvGameIq').onclick = () => { capture('quick_start', { kind: 'iq' }); tnApp.startQuiz('ninja'); };
     $id('nvGameSim').onclick = () => { capture('quick_start', { kind: 'sim' }); tnApp.startQuiz('sim'); };
