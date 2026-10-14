@@ -464,7 +464,7 @@
     cta('nvTkMore', 'teclado_ver_mas', () => goTo('teclado', { sub: 'entrenar' }));
     cta('scNinja', 'mente_entrenar', () => goTo('mente', { sub: 'entrenar' }));
     cta('nvMentalIq', 'mente_desafio_iq', () => goTo('mente', { sub: 'desafio' }));
-    cta('scMax', 'mente_batallas', () => goTo('dojo', { sub: 'batallas' }));
+    cta('scMax', 'mente_batallas', () => goTo('desafios'));
     cta('nvMentalCo', 'mente_empresas'); // a link to /profesional
     $id('nvHeroSpeed').onclick = () => { if (touchOnly()) { capture('quick_start', { kind: 'celu' }); openGame('celu'); } else { capture('quick_start', { kind: 'speed' }); tnApp.start('test'); } };
     $id('nvHeroIq').onclick = $id('nvGameIq').onclick = () => { capture('quick_start', { kind: 'iq' }); tnApp.startQuiz('ninja'); };

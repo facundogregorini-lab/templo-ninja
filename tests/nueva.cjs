@@ -37,7 +37,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await p.click('[data-go="inicio"]'); await p.click('#nvMentalIq');
     check('Desafío IQ opens its tab in Mente', await onScreen(p, 'mente') && await visible(p, '#maxBtn'));
     await p.click('[data-go="inicio"]'); await p.click('#scMax');
-    check('Batallas opens the battles of the Dojo', await onScreen(p, 'dojo') && await visible(p, '#mdBattles') && (await p.getAttribute('[data-view-of="dojo"] [role="tab"][data-sub="batallas"]', 'aria-selected')) === 'true' && (await events(p, 'home_cta')).some(e => e.cta === 'mente_batallas'));
+    check('Batallas opens the quick challenges in Mente, now called Batallas', await onScreen(p, 'desafios') && await visible(p, '#nvGameIq') && (await p.textContent('#quickTitle')) === 'Batallas' && (await p.textContent('[data-view-of="mente"] [role="tab"][data-sub="relampago"]')) === 'Batallas' && (await events(p, 'home_cta')).some(e => e.cta === 'mente_batallas'));
     await p.click('[data-go="inicio"]');
     await p.click('#continue');
     check('"Seguí acá" points to the first lesson, in the white belt', (await p.textContent('#tkNextTitle')).includes('Lección 1') && (await p.textContent('#tkNextEyebrow')).includes('Cinturón blanco') && (await p.textContent('#tkCount')) === '0 de 6 en este cinturón' && (await p.$$('#tkKeys kbd')).length === 2);
