@@ -50,7 +50,7 @@ const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KH
     const ad = '/?utm_source=meta&utm_medium=paid_social&utm_campaign=tn_registro_ar&utm_content=velocidad&fbclid=IwAR123';
 
     const n = await visit('nueva', ad);
-    check('With the cookie, "/" shows the new home at the same address', await n.evaluate(() => !!window.tnLayout && document.title === 'Templo Ninja' && !!document.querySelector('.nv-all')) && n.url() === SITE + ad);
+    check('With the cookie, "/" shows the new home at the same address', await n.evaluate(() => !!window.tnLayout && document.title === 'Templo Ninja' && !!document.querySelector('#homeRanksTitle')) && n.url() === SITE + ad);
     check('…its exposure is reported once, as the test variant', JSON.stringify(await exposures(n)) === JSON.stringify([{ variant: 'test', home: 'nueva', '$feature/home-nueva': 'test' }]));
     check('…and the ad click is kept for Meta (_fbc from the fbclid)', (await n.context().cookies()).some(c => c.name === '_fbc' && c.value.endsWith('.IwAR123')));
     await n.click('.nv-links [data-go="teclado"]');

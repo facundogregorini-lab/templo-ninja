@@ -471,28 +471,14 @@ body[data-view="game"] .nv-nudge,body[data-view="lesson"] .nv-nudge,body[data-vi
   .nv-clean .nv-lightning-link{font-size:.95rem}
 }
 
-/* Inicio: the doors' buttons in two rows, the "Todos" grid, and the typing belts of the seven */
+/* Inicio: the doors' buttons in two rows, and the typing belts of the seven */
 .nv-clean .nv-door .nv-ctas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}
 .nv-clean .nv-door .nv-ctas .btn{width:100%;margin:0;padding:0 10px;font-size:.92rem;white-space:nowrap;justify-content:center;text-align:center;min-height:48px;text-decoration:none}
 .nv-clean .nv-ctas .nv-cta-main{grid-column:1/-1}
-.nv-clean .nv-all{display:grid;gap:16px;border-top:1px solid var(--line);padding-top:28px}
-.nv-clean .nv-all .nv-sh h2{margin:0;font:800 1.6rem var(--display);letter-spacing:-.02em}
-.nv-clean .nv-all .nv-sh p{margin:4px 0 0;color:var(--muted)}
-.nv-clean a.nv-game{text-decoration:none;color:inherit}
-.nv-clean a.nv-game:hover{border-color:var(--accent)}
-.nv-vis-keys{display:flex;gap:8px}
-.nv-vis-keys kbd{display:inline-grid;place-items:center;width:34px;height:38px;border:1px solid var(--line);border-bottom:4px solid #3B6BCB;border-radius:7px;background:var(--card);font:600 1rem var(--mono);color:var(--ink)}
-.nv-vis-chips{display:flex;gap:6px}
-.nv-vis-chips i{font-style:normal;display:inline-grid;place-items:center;min-width:32px;height:28px;padding:0 4px;border:1px solid var(--line);border-radius:7px;background:var(--card);font:700 .8rem var(--body);color:var(--ink)}
-.nv-vis-chips i.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .nv-clean .group.nv-folded .nv-tk-belt{display:none}
 .nv-clean .nv-belt-big,.nv-clean .nv-belt-result{width:72px;height:22px}
 .nv-clean .nv-belt-big:after,.nv-clean .nv-belt-result:after{left:30px;top:-6px;width:12px;height:34px}
 @media(max-width:760px){
   .nv-clean .nv-ctas-4 .btn:first-child,.nv-clean .nv-ctas-4 .btn:last-child{grid-column:1/-1}
-  .nv-clean .nv-all{padding-top:22px}
-  .nv-clean .nv-all .nv-sh h2{font-size:1.4rem}
-  .nv-vis-keys kbd{width:30px;height:34px}
-  .nv-vis-chips i{min-width:28px;height:26px}
 }
 @media(max-width:380px){.nv-clean .upgrade-cta .cta-long{display:none}}
