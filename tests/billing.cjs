@@ -74,13 +74,16 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await p.evaluate(() => { const key = document.querySelector('#inner .c').textContent; document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); });
     await p.waitForTimeout(200); await p.keyboard.press('Escape'); return true;
   };
+  // A whole lesson typed (instant), and the belt gate of the free plan
+  const typeAll = p => p.evaluate(() => { const text = [...document.querySelectorAll('#inner .c')].map(s => s.textContent).join(''); for (const key of text) document.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: key !== key.toLowerCase(), bubbles: true, cancelable: true })); });
+  const gateText = p => p.textContent('#gateDlg');
   const register = async (p, name) => {
     await p.click('#acctBtn'); await p.click('#authMode [data-v="register"]');
     await p.fill('#user', name); await p.fill('#pass', 'secreto1'); await p.click('#authSubmit'); await p.waitForSelector('#acctBtn .nm');
     await p.waitForTimeout(300);
   };
   try {
-    // Guest: five free practices a day, counted in this browser
+    // Guest: six free practices a day, counted in this browser
     const guest = await open('/?fbclid=clickGuest1&gclid=gclidGuest123&utm_source=meta');
     await guest.waitForFunction(() => window.fbq);
     const guestAnon = await guest.evaluate(() => localStorage.getItem('teclado-ciego-anon'));
@@ -90,37 +93,68 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     await guest.waitForFunction(() => window.gtag && document.querySelector('script[src*="googletagmanager"]'));
     check('The Google Ads tag starts with the id from the server', guest.gt.some(a => a[0] === 'config' && a[1] === 'AW-123456789'));
     check('A Google ad click (gclid) leaves the _gcl_aw cookie Google\'s tag reads', /^GCL\.\d+\.gclidGuest123$/.test(await guest.evaluate(() => document.cookie.match(/_gcl_aw=([^;]*)/)?.[1])));
-    check('Guests see how many free practices are left', (await guest.textContent('#planNote')).includes('quedan 5 prácticas de 5'));
+    check('Guests see how many free practices are left', (await guest.textContent('#planNote')).includes('quedan 6 prácticas de 6'));
     await guest.click('#continue'); await guest.keyboard.press('Escape');
-    check('Opening a lesson without typing does not use a practice', (await guest.textContent('#planNote')).includes('quedan 5'));
-    for (let i = 0; i < 5; i++) check(`Free practice ${i + 1} of 5`, await practice(guest));
-    check('Each practice is a pixel event with its section', fired(guest, 'Practica').length === 5 && fired(guest, 'Practica')[0][2].seccion === 'teclado-ciego');
-    check('Each practice is also a Google Ads conversion (Practica → practica)', conv(guest, 'Prac1abc').length === 5);
-    check('Each practice is a practice_started event with its lesson and the free practices left', events(guest, 'practice_started').length === 5
-      && events(guest, 'practice_started')[0].section === 'teclado-ciego' && events(guest, 'practice_started')[0].kind === 'leccion' && events(guest, 'practice_started')[0].lesson && events(guest, 'practice_started').map(e => e.free_left).join() === '4,3,2,1,0');
-    check('The sixth practice shows the plan', !(await practice(guest)) && await guest.isVisible('#planDlg') && (await guest.textContent('#planReason')).includes('5 prácticas'));
-    check('The plan is a one-time contribution to the temple', (await guest.textContent('#planPrice')) === '$ 4.900 · pago único' && (await guest.textContent('#planDlg')).includes('Los monjes ninja te lo agradecerán') && (await guest.textContent('#planDlg')).includes('sin suscripción'));
-    check('Guests are asked to sign in to pay', (await guest.textContent('#planSubmit')).includes('Crear cuenta'));
-    check('Out of guest practices, a free account comes first', await guest.isVisible('#planFree') && (await guest.textContent('#planTitle')) === 'Seguí entrenando gratis'
-      && (await guest.textContent('#planFreeText')).includes('10 prácticas por día') && await guest.isVisible('#planOr') && !(await guest.getAttribute('#planSubmit', 'class')).includes('primary'));
-    check('Hitting the limit is a pricing_viewed event with its reason', events(guest, 'pricing_viewed').some(e => e.reason === 'limit' && e.payments_on && !e.logged_in));
-    check('Seeing the prices is a ViewContent pixel event with its reason', fired(guest, 'ViewContent').some(a => a[2].content_category === 'limit'));
-    check('Seeing the prices is the Google Ads conversion the campaign optimizes for (ViewContent → precios)', conv(guest, 'Prec1abc').length >= 1);
+    check('Opening a lesson without typing does not use a practice', (await guest.textContent('#planNote')).includes('quedan 6'));
+    for (let i = 0; i < 6; i++) check(`Free practice ${i + 1} of 6`, await practice(guest));
+    check('Each practice is a pixel event with its section', fired(guest, 'Practica').length === 6 && fired(guest, 'Practica')[0][2].seccion === 'teclado-ciego');
+    check('Each practice is also a Google Ads conversion (Practica → practica)', conv(guest, 'Prac1abc').length === 6);
+    check('Each practice is a practice_started event with its lesson and the free practices left', events(guest, 'practice_started').length === 6
+      && events(guest, 'practice_started')[0].section === 'teclado-ciego' && events(guest, 'practice_started')[0].kind === 'leccion' && events(guest, 'practice_started')[0].lesson && events(guest, 'practice_started').map(e => e.free_left).join() === '5,4,3,2,1,0');
+    check('The seventh practice opens the guest gate, not the plan', !(await practice(guest)) && await guest.isVisible('#gateDlg') && await guest.isHidden('#planDlg') && (await guest.textContent('#gateTitle')) === 'Usaste tus 6 prácticas gratis de hoy');
+    check('Out of guest practices, the free account comes first, with its form right there', await guest.isVisible('#gateUser') && await guest.isVisible('#gatePass')
+      && (await gateText(guest)).includes('13 prácticas por día, en vez de 6') && (await gateText(guest)).includes('Sin email ni tarjeta') && !(await gateText(guest)).includes('$'));
+    check('The guest gate is a belt_gate_shown event (no prices shown, so no pricing_viewed)', events(guest, 'belt_gate_shown').some(e => e.gate === 'invitado' && e.trigger === 'limit' && !e.logged_in && e.used_today === 6)
+      && !events(guest, 'pricing_viewed').length);
+    check('The guest gate is the ViewContent the ad sets optimize for, with its category', fired(guest, 'ViewContent').some(a => a[2].content_category === 'limite_invitado'));
+    check('…and the Google Ads conversion the campaign optimizes for (ViewContent → precios)', conv(guest, 'Prec1abc').length >= 1);
     const view = fired(guest, 'ViewContent')[0], viewSent = (await waitSent('ViewContent', 1))[0];
-    check('The server sends the same ViewContent, with the same event id', view[3]?.eventID && viewSent?.event_id === view[3].eventID && viewSent.custom_data.content_category === 'limit');
+    check('The server sends the same ViewContent, with the same event id', view[3]?.eventID && viewSent?.event_id === view[3].eventID && viewSent.custom_data.content_category === 'limite_invitado');
     check('The server ViewContent carries what Meta matches people with', viewSent.user_data.external_id[0] === hash(guestAnon) && viewSent.user_data.client_ip_address === '127.0.0.1'
       && viewSent.user_data.client_user_agent && viewSent.user_data.fbp === 'fb.1.1700000000000.42' && /\.clickGuest1$/.test(viewSent.user_data.fbc) && viewSent.event_source_url === SITE + '/');
     check('Only the page\'s own events can be sent through /api/track', (await fetch(SITE + '/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'Purchase', event_id: 'ev_12345678' }) })).status === 400);
+    check('…and LimiteCuenta only for an account', (await fetch(SITE + '/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'LimiteCuenta', event_id: 'ev_12345678', reason: 'limite_cuenta' }) })).status === 400);
+    await guest.click('#gateClose'); await guest.waitForTimeout(100); // the dialog's close event comes a moment later
+    check('Closing the gate is a belt_gate_dismissed event', events(guest, 'belt_gate_dismissed').some(e => e.gate === 'invitado' && e.trigger === 'limit'));
+    await guest.click('#upgradeCta');
+    check('The plan is a one-time contribution to the temple', (await guest.textContent('#planPrice')) === '$ 4.900 · pago único' && (await guest.textContent('#planDlg')).includes('Los monjes ninja te lo agradecerán') && (await guest.textContent('#planDlg')).includes('sin suscripción'));
+    check('Guests are asked to sign in to pay', (await guest.textContent('#planSubmit')).includes('Crear cuenta'));
+    check('Opening the plan is a pricing_viewed and a ViewContent with its reason', events(guest, 'pricing_viewed').some(e => e.reason === 'upgrade' && e.payments_on && !e.logged_in) && fired(guest, 'ViewContent').some(a => a[2].content_category === 'upgrade'));
     await guest.click('#planClose'); await guest.reload(); await guest.waitForSelector('#planNote:not([hidden])');
     check('Reloading does not reset the daily limit', (await guest.textContent('#planNote')).includes('ya usaste'));
     check('Without free practices left, the daily plan offers the free account and unlimited access instead of a rest', await guest.isVisible('#dojoUnlock') && (await guest.textContent('#dojoUnlock')) === 'Seguir gratis'
       && (await guest.textContent('#dojoCount')).includes('cuenta gratis') && (await guest.textContent('#dojoCount')).includes('acceso ilimitado') && !(await guest.textContent('#dojo')).includes('descanso'));
     await guest.click('#dojoUnlock');
-    check('The plan button opens the free account and the contribution', await guest.isVisible('#planDlg') && await guest.isVisible('#planFree') && (await guest.textContent('#planReason')).includes('5 prácticas'));
-    await guest.click('#planClose');
+    check('The plan button opens the guest gate', await guest.isVisible('#gateDlg') && await guest.isVisible('#gateUser'));
+    await guest.click('#gateClose');
     await guest.click('#cogCta'); await guest.click('#cogContinue');
-    check('The interview training uses the same daily limit', await guest.isVisible('#planDlg') && await guest.isHidden('#quiz'));
-    await guest.click('#planClose');
+    check('The interview training uses the same daily limit', await guest.isVisible('#gateDlg') && await guest.isHidden('#quiz'));
+    await guest.click('#gateClose');
+
+    // The white belt: a guest who wins it is asked to keep it with a free account; the next belt needs one
+    const wb = await open();
+    for (let i = 0; i < 6; i++) {
+      await wb.click('#continue'); await typeAll(wb); await wb.waitForSelector('#result:not([hidden])');
+      if (i < 5) { check(`White belt lesson ${i + 1} passes without a gate`, await wb.isHidden('#gateDlg')); await wb.click('#rHome'); }
+    }
+    await wb.waitForSelector('#gateDlg[open]');
+    check('Winning the white belt opens its gate, over the result, with the stats', (await wb.textContent('#gateTitle')) === 'Completaste la fila guía' && await wb.isVisible('#result')
+      && (await gateText(wb)).includes('palabras por minuto') && (await wb.textContent('#gateSubmit')) === 'Guardar mi progreso' && (await gateText(wb)).includes('solo en este navegador'));
+    check('The white belt gate is a ViewContent (cinturon_blanco) and a belt_gate_shown "won"', fired(wb, 'ViewContent').some(a => a[2].content_category === 'cinturon_blanco')
+      && events(wb, 'belt_gate_shown').some(e => e.gate === 'blanco' && e.trigger === 'won') && (await waitSent('ViewContent', 3)).some(e => e.custom_data.content_category === 'cinturon_blanco'));
+    await wb.click('#gateClose'); await wb.click('#rHome');
+    await wb.click('#continue');
+    check('The next lesson (past the white belt) opens the gate again, not the lesson', await wb.isVisible('#gateDlg') && await wb.isHidden('#lesson')
+      && (await wb.textContent('#gateTitle')).includes('seguí con la fila superior') && events(wb, 'belt_gate_shown').some(e => e.gate === 'blanco' && e.trigger === 'locked'));
+    await wb.click('#gateSwitch');
+    check('"Ya tengo cuenta" turns the gate\'s form into the sign-in', (await wb.textContent('#gateSubmit')) === 'Entrar' && (await wb.getAttribute('#gatePass', 'autocomplete')) === 'current-password');
+    await wb.click('#gateSwitch');
+    await wb.fill('#gateUser', 'wanda'); await wb.fill('#gatePass', 'secreto1'); await wb.click('#gateSubmit');
+    await wb.waitForSelector('#lesson:not([hidden])');
+    check('Creating the account from the gate opens the lesson that was waiting', await wb.isHidden('#gateDlg') && (await wb.textContent('#lName')) === 'E · I'
+      && fired(wb, 'CompleteRegistration').length === 1 && events(wb, 'signed_up').some(e => e.source === 'gate_blanco'));
+    check('…and saying the belt is kept, with the account\'s practices left today', (await wb.textContent('#toast')).includes('fila guía quedó guardada') && (await wb.textContent('#toast')).includes('Tenés 13 prácticas más hoy'));
+    check('Signing up from the gate does not count as dismissing it', !events(wb, 'belt_gate_dismissed').some(e => e.gate === 'blanco' && e.trigger === 'locked'));
 
     // The experiment iq-desafio-directo ended keeping the original: visitors from the "iq" ad see Ninja mental as always
     const iqPage = await open('/?utm_content=iq#ninja', { 'iq-desafio-directo': 'test' });
@@ -146,16 +180,16 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
 
     // Out of guest practices: create the free account from the plan and keep going
     const nico = await open();
-    for (let i = 0; i < 5; i++) await practice(nico);
-    check('Without practices left the plan opens', !(await practice(nico)) && await nico.isVisible('#planFree'));
-    await nico.click('#planSignup');
-    check('The free account button opens the sign-up, saying what the account gives', await nico.isVisible('#authDlg') && (await nico.textContent('#authSubmit')) === 'Crear cuenta' && (await nico.textContent('#authLead')).includes('10 prácticas por día'));
-    await nico.fill('#user', 'nico'); await nico.fill('#pass', 'secreto1'); await nico.click('#authSubmit'); await nico.waitForSelector('#acctBtn .nm');
+    for (let i = 0; i < 6; i++) await practice(nico);
+    check('Without practices left the gate opens with its form', !(await practice(nico)) && await nico.isVisible('#gateUser'));
+    await nico.fill('#gateUser', 'nico'); await nico.fill('#gatePass', 'secreto1'); await nico.click('#gateSubmit'); await nico.waitForSelector('#acctBtn .nm');
     await nico.waitForFunction(() => document.querySelector('#toast').textContent.includes('más hoy'));
-    check('Signing up from the plan says how many practices are left today', (await nico.textContent('#toast')).includes('Tenés 10 prácticas más hoy'));
-    check('Signing up from the plan is a CompleteRegistration and a signed_up from the plan', fired(nico, 'CompleteRegistration').length === 1
-      && events(nico, 'signup_prompt_clicked').some(e => e.mode === 'register' && e.used_today === 5) && events(nico, 'signed_up').some(e => e.source === 'plan'));
-    check('With the free account the practices continue right away', await practice(nico) && (await nico.textContent('#planNote')).includes('quedan 9 prácticas de 10'));
+    check('Signing up from the gate says how many practices are left today', (await nico.textContent('#toast')).includes('Tenés 13 prácticas más hoy'));
+    check('Signing up from the gate is a CompleteRegistration and a signed_up from that gate', fired(nico, 'CompleteRegistration').length === 1 && events(nico, 'signed_up').some(e => e.source === 'gate_invitado'));
+    await nico.waitForSelector('#lesson:not([hidden])');
+    await nico.evaluate(() => { const key = document.querySelector('#inner .c').textContent; document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); });
+    await nico.waitForTimeout(200); await nico.keyboard.press('Escape');
+    check('With the free account the practice that was waiting starts right away', (await nico.textContent('#planNote')).includes('quedan 12 prácticas de 13'));
 
     // Account: the limit is counted on the server
     const ana = await open(); await register(ana, 'ana');
@@ -164,15 +198,18 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Creating an account is a Google Ads conversion, with the same id as transaction_id', conv(ana, 'Reg1abc').length === 1 && conv(ana, 'Reg1abc')[0].transaction_id === reg[3]?.eventID);
     check('The server sends the same CompleteRegistration, with the same event id and the account', regSent && regSent.user_data.external_id.includes(hash('ana')) && regSent.user_data.client_ip_address);
     check('Creating an account is a signed_up event, identified by the username only', events(ana, 'signed_up').length === 1 && events(ana, 'signed_up')[0].source === 'account' && events(ana, '$identify').some(e => e.id === 'ana'));
-    check('Accounts see their larger free plan', (await ana.textContent('#planNote')).includes('quedan 10 prácticas de 10'));
-    for (let i = 0; i < 10; i++) await practice(ana);
+    check('Accounts see their larger free plan', (await ana.textContent('#planNote')).includes('quedan 13 prácticas de 13'));
+    for (let i = 0; i < 13; i++) await practice(ana);
     await ana.waitForTimeout(300);
     const ana2 = await open();
     await ana2.click('#acctBtn'); await ana2.fill('#user', 'ana'); await ana2.fill('#pass', 'secreto1'); await ana2.click('#authSubmit');
     await ana2.waitForFunction(() => document.querySelector('#planNote').textContent.includes('ya usaste'));
-    check('The daily limit follows the account to another browser', !(await practice(ana2)) && await ana2.isVisible('#planDlg'));
-    check('Paying needs no extra data', (await ana2.textContent('#planSubmit')) === 'Hacer mi aporte con Mercado Pago');
-    await Promise.all([ana2.waitForURL(/aporte=ok/), ana2.click('#planSubmit')]);
+    check('The daily limit follows the account to another browser, with its gate', !(await practice(ana2)) && await ana2.isVisible('#gateDlg') && (await ana2.textContent('#gateTitle')) === 'Entrenaste 13 veces hoy');
+    check('The account\'s gate offers more practices tomorrow or the unlimited access now, with the price', (await gateText(ana2)).includes('Mañana tenés 13 prácticas más') && (await ana2.textContent('#gateSubmit')) === 'Seguir ahora · $ 4.900');
+    check('The account\'s gate is a ViewContent, a pricing_viewed and a LimiteCuenta (custom, also from the server)', fired(ana2, 'ViewContent').some(a => a[2].content_category === 'limite_cuenta')
+      && events(ana2, 'pricing_viewed').some(e => e.reason === 'limite_cuenta' && e.logged_in) && ana2.px.some(a => a[0] === 'trackCustom' && a[1] === 'LimiteCuenta' && a[3]?.eventID)
+      && (await waitSent('LimiteCuenta', 1)).some(e => e.custom_data.content_category === 'limite_cuenta' && e.user_data.external_id.includes(hash('ana'))));
+    await Promise.all([ana2.waitForURL(/aporte=ok/), ana2.click('#gateSubmit')]);
     await ana2.waitForFunction(() => document.querySelector('#toast').textContent.includes('Gracias'));
     for (let i = 0; i < 50 && !(fired(ana2, 'Purchase').length && conv(ana2, 'Comp1abc').length); i++) await ana2.waitForTimeout(100); // the pixel and gtag scripts load after the page
     const checkout = fired(ana2, 'InitiateCheckout')[0], buy = fired(ana2, 'Purchase');
@@ -181,7 +218,7 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Going to pay is a Google Ads conversion with the price and the checkout id', gPay?.value === 4900 && gPay.currency === 'ARS' && gPay.transaction_id === checkout[3]?.eventID);
     check('Coming back paid is one Google Ads purchase conversion, with the payment id', gBuy.length === 1 && gBuy[0].value === 4900 && gBuy[0].currency === 'ARS' && gBuy[0].transaction_id === 'pay_pay_1');
     check('The server sends the same InitiateCheckout once the checkout exists', sent('InitiateCheckout').length === 1 && sent('InitiateCheckout')[0].event_id === checkout[3]?.eventID && sent('InitiateCheckout')[0].custom_data.value === 4900);
-    check('Going to pay is checkout_clicked (saying where the plan was opened) and checkout_started', events(ana2, 'checkout_clicked').some(e => e.logged_in && e.price === 4900 && e.source === 'limit') && events(ana2, 'checkout_started').length === 1);
+    check('Going to pay is checkout_clicked (saying where the plan was opened) and checkout_started', events(ana2, 'checkout_clicked').some(e => e.logged_in && e.price === 4900 && e.source === 'limite_cuenta') && events(ana2, 'checkout_started').length === 1);
     const succeeded = ph.filter(e => e.event === 'payment_succeeded');
     check('The server reports the payment to PostHog once, for the account', succeeded.length === 1 && succeeded[0].distinct_id === 'ana' && succeeded[0].properties.value === 4900 && succeeded[0].properties.source === 'server');
     check('The payment in PostHog has what Mercado Pago keeps and what reaches the account', succeeded[0].properties.net_amount === 4530.5 && succeeded[0].properties.fee === 369.5 && succeeded[0].properties.payment_method === 'account_money' && succeeded[0].properties.installments === 1);
@@ -208,12 +245,27 @@ const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
     check('Back from paying without a session: thanks, and the sign-in with the username filled in', (await elsewhere.inputValue('#user')) === 'ana'
       && (await elsewhere.textContent('#toast')).includes('Entrá con tu usuario') && events(elsewhere, 'payment_return_signed_out').some(e => e.status === 'ok') && !elsewhere.url().includes('aporte'));
 
+    // The yellow belt: a free account that wins it reaches the unlimited access; lessons past it are part of it
+    const yb = await open(); await register(yb, 'yago');
+    await yb.evaluate(() => ['fj', 'dk', 'sl', 'añ', 'gh', 'rep1', 'ei', 'ru', 'ty', 'wo', 'qp'].forEach(id => tnApp.state.lessons[id] = { stars: 2, ppm: 30, acc: 96 }));
+    await yb.evaluate(() => tnApp.start(tnApp.LESSONS[11])); await typeAll(yb); await yb.waitForSelector('#gateDlg[open]');
+    check('Winning the yellow belt opens the unlimited access, with what it unlocks', (await yb.textContent('#gateTitle')) === 'Completaste la fila superior'
+      && (await gateText(yb)).includes('Fila inferior, mayúsculas y tildes') && (await yb.textContent('#gateSubmit')) === 'Desbloquear todo · $ 4.900' && await yb.isHidden('#gateUser'));
+    check('…a ViewContent (cinturon_amarillo) and a LimiteCuenta', fired(yb, 'ViewContent').some(a => a[2].content_category === 'cinturon_amarillo') && yb.px.some(a => a[0] === 'trackCustom' && a[1] === 'LimiteCuenta' && a[2].content_category === 'cinturon_amarillo'));
+    await yb.click('#gateClose'); await yb.click('#rHome');
+    await yb.evaluate(() => tnApp.start(tnApp.LESSONS[12]));
+    check('A lesson past the yellow belt opens the same gate, not the lesson', await yb.isVisible('#gateDlg') && await yb.isHidden('#lesson') && (await yb.textContent('#gateTitle')).includes('acceso ilimitado'));
+    await yb.click('#gateClose');
+    await yb.evaluate(() => tnApp.start(tnApp.LESSONS[6]));
+    check('The lessons of the free part stay open to review', await yb.isVisible('#lesson') && await yb.isHidden('#gateDlg'));
+    await yb.keyboard.press('Escape');
+
     // Server side
     const bob = await open(); await register(bob, 'bobo');
     const token = await bob.evaluate(() => localStorage.getItem('teclado-ciego-token'));
     const play = () => fetch(SITE + '/api/billing', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'play' }) });
-    const codes = []; for (let i = 0; i < 11; i++) codes.push((await play()).status);
-    check('The server allows ten practices to an account and blocks the eleventh', codes.join() === '200,'.repeat(10) + '402');
+    const codes = []; for (let i = 0; i < 14; i++) codes.push((await play()).status);
+    check('The server allows thirteen practices to an account and blocks the fourteenth', codes.join() === '200,'.repeat(13) + '402');
     const planOf = async t => (await fetch(SITE + '/api/billing', { headers: { Authorization: 'Bearer ' + t } })).json();
     const hook = body => fetch(SITE + '/api/mercadopago', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     // A payment that only arrives by webhook (the user closed Mercado Pago before coming back)
