@@ -477,7 +477,7 @@ function show(view) {
 let testMethod = 'ciegas', testSeed = '';
 const SHARED_TEXTS = [...TEXTS, ...REFRANES]; // v1: keep this corpus stable for shared links
 function start(l, method, seed) {
-  if (!mayStart()) return;
+  if (!mayStart(l)) return;
   window.tnLayout?.start?.(l);
   cur = l; mode = 'typing'; counted = false;
   if (l === 'test' && method) testMethod = method;
@@ -755,6 +755,11 @@ function finish() {
   $('rHome').onclick = isTest ? () => { goHome(); $('evo').scrollIntoView(); } : goHome;
   highlight(); $('bar').style.width = '100%';
   (($('rNext') || $('rAgain'))).focus({ preventScroll: true });
+  // The belt that closes the free part of the course opens its gate, over the result: the white belt for a guest
+  // (keep it with a free account), the yellow one for a free account (the rest of the path is unlimited access).
+  const won = !isTest && !belt && !cur.review && st > 0 && evoBefore && !evoBefore.complete && evoState(cur.g).complete;
+  const wall = won && limited() ? (cur.g === 0 && !auth.name ? 'blanco' : cur.g === 1 && auth.name ? 'amarillo' : null) : null;
+  if (wall) setTimeout(() => { if (mode === 'done' && !document.querySelector('dialog[open]')) showGate(wall, 'won', { ppm, acc }); }, 900);
 }
 function goHome() { mode = 'home'; running = false; clearInterval(timer); if (NINJA_HASH.test(location.hash)) window.history.replaceState(null, '', location.pathname + location.search); show('home'); renderHome(); }
 
@@ -957,21 +962,27 @@ $('acctBtn').onclick = () => {
 };
 document.querySelectorAll('#authMode button').forEach(b => b.onclick = () => setAuthMode(b.dataset.v));
 $('authCancel').onclick = () => { signupFrom = null; $('authDlg').close(); };
+// Signing in or up, from the account dialog or from a belt gate (which has its own form). True when it worked.
+async function authenticate(action, username, password, errEl) {
+  try {
+    const regId = eventId(); // a new account is a CompleteRegistration from the server too, with this id
+    const r = await api('auth', { action, username, password, ...(action === 'register' ? { track: metaTrack(regId) } : {}) });
+    if ($('authDlg').open) $('authDlg').close();
+    await signedIn(r.token, r.user.name, r.user.display);
+    loadRanking();
+    if (action === 'register') track('CompleteRegistration', { content_name: 'Cuenta Templo Ninja' }, regId);
+    tn.capture(action === 'register' ? 'signed_up' : 'logged_in', { source: signupFrom || 'account' });
+    const left = limited() ? Math.max(0, billing.freePerDay - usedToday()) : 0, more = signupFrom && left ? ` Tenés ${left} ${left === 1 ? 'práctica' : 'prácticas'} más hoy: ¡a seguir!` : '';
+    const kept = action === 'register' && signupFrom === 'gate_blanco' && evoState(0).complete ? (TN_BELTS ? ' Tu cinturón blanco quedó guardado.' : ' Tu fila guía quedó guardada.') : '';
+    toast((action === 'register' ? `Cuenta creada. Tu progreso se guarda en ${r.user.name}.` : `Hola, ${shownName()}. Seguimos donde dejaste.`) + kept + more);
+    signupFrom = null;
+    return true;
+  } catch (err) { errEl.textContent = err.message; return false; }
+}
 $('authForm').onsubmit = async e => {
   e.preventDefault();
   $('authErr').textContent = ''; $('authSubmit').disabled = true;
-  try {
-    const regId = eventId(); // a new account is a CompleteRegistration from the server too, with this id
-    const r = await api('auth', { action: authMode, username: $('user').value, password: $('pass').value, ...(authMode === 'register' ? { track: metaTrack(regId) } : {}) });
-    $('authDlg').close();
-    await signedIn(r.token, r.user.name, r.user.display);
-    loadRanking();
-    if (authMode === 'register') track('CompleteRegistration', { content_name: 'Cuenta Templo Ninja' }, regId);
-    tn.capture(authMode === 'register' ? 'signed_up' : 'logged_in', { source: signupFrom || 'account' });
-    const left = limited() ? Math.max(0, billing.freePerDay - usedToday()) : 0, more = signupFrom && left ? ` Tenés ${left} ${left === 1 ? 'práctica' : 'prácticas'} más hoy: ¡a seguir!` : '';
-    toast((authMode === 'register' ? `Cuenta creada. Tu progreso se guarda en ${r.user.name}.` : `Hola, ${shownName()}. Seguimos donde dejaste.`) + more);
-    signupFrom = null;
-  } catch (err) { $('authErr').textContent = err.message; }
+  await authenticate(authMode, $('user').value, $('pass').value, $('authErr'));
   $('authSubmit').disabled = false;
 };
 $('acctClose').onclick = () => $('acctDlg').close();
@@ -1623,11 +1634,13 @@ function gadsConversion(event, params, id) {
 }
 const track = (event, params, eventID) => { gadsConversion(event, params, eventID); if (pixelOn) fbq('track', event, params || {}, eventID ? { eventID } : undefined); };
 const trackCustom = (event, params) => { gadsConversion(event, params); if (pixelOn) fbq('trackCustom', event, params || {}); };
-// An event that happens only in the page (ViewContent): the pixel, and the server through /api/track with the same id.
-function trackBoth(event, params, extra) {
+// An event that happens only in the page (ViewContent, LimiteCuenta): the pixel, and the server through /api/track with the
+// same id. custom: a custom event of ours (trackCustom), not one of Meta's standard ones.
+function trackBoth(event, params, extra, custom = false) {
   if (!pixelOn) return gadsConversion(event, params);
   const id = eventId();
-  track(event, params, id);
+  if (custom) fbq('trackCustom', event, params || {}, { eventID: id });
+  else track(event, params, id);
   fetch('/api/track', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', ...(auth.token ? { Authorization: 'Bearer ' + auth.token } : {}) },
     body: JSON.stringify({ event, event_id: id, ...extra, track: metaTrack(id) }) }).catch(() => {});
 }
@@ -1638,9 +1651,13 @@ function trackPurchase() {
   try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch {}
   track('Purchase', { value: p.value, currency: p.currency, content_name: 'Templo Ninja · acceso ilimitado' }, p.id);
 }
-function mayStart() {
+// Whether a practice can start: a lesson past the free part of the course opens its belt gate, and so do the day's
+// practices once used (l: the typing lesson, if it is one).
+function mayStart(l) {
+  const wall = lessonGate(l);
+  if (wall) { showGate(wall, 'locked', null, l); return false; }
   if (!limited() || usedToday() < billing.freePerDay) return true;
-  showPlan('limit'); return false;
+  showWall(l); return false;
 }
 // A practice counts from its first key, so opening a lesson and leaving does not use one.
 function countPractice() {
@@ -1650,7 +1667,7 @@ function countPractice() {
   if (!limited()) return;
   if (auth.name) {
     billing.plays++;
-    api('billing', { action: 'play' }).catch(err => { if (err.status === 402) { goHome(); showPlan('limit'); } });
+    api('billing', { action: 'play' }).catch(err => { if (err.status === 402) { goHome(); showWall(); } });
   } else try { localStorage.setItem(PLAYS_KEY, JSON.stringify({ day: arDay(), n: guestPlays() + 1 })); } catch {}
   renderPlanNote();
 }
@@ -1710,6 +1727,124 @@ $('upgrade').onclick = () => { $('acctDlg').close(); showPlan('upgrade'); };
 $('upgradeCta').onclick = () => showPlan('upgrade');
 $('planClose').onclick = () => $('planDlg').close();
 $('planDlg').addEventListener('close', stopQrWatch);
+
+/* ---------- Belt gates: the walls of the free plan, tied to the course ---------- */
+// Guests take the first group of lessons (white belt in /nueva, "Fila guía" in /); a free account also the second (yellow
+// belt, "Fila superior"); the rest of the path is part of the unlimited access. The day's practices still count
+// (billing.freePerDay: 6 for guests, 13 for accounts, Ninja mental included) and whichever comes first opens a gate:
+//   blanco: a guest won the white belt, or wants a lesson past it → keep it with a free account (form right there)
+//   invitado: a guest used the day's practices before the belt → the same free account, with the belt's progress
+//   amarillo: an account won the yellow belt, or wants a lesson past it → unlimited access (pay)
+//   cuenta: an account used the day's practices → unlimited access now, or more practices tomorrow
+// Each gate is a ViewContent for Meta and Google (what the ad sets optimize for, "Vieron precios"), as the plan was before,
+// with its content_category; the account's gates also send LimiteCuenta (custom, the audience closest to paying).
+// In PostHog: belt_gate_shown, and pricing_viewed only for the gates that show the price.
+const GATE_CAT = { blanco: 'cinturon_blanco', invitado: 'limite_invitado', amarillo: 'cinturon_amarillo', cuenta: 'limite_cuenta' };
+const isGuestGate = kind => kind === 'blanco' || kind === 'invitado';
+let gate = null, gateMode = 'register'; // the open gate { kind, trigger, lesson } · its form: create an account or sign in
+// Which gate a typing lesson is behind, if any: reviews (repaso, control) and the speed test are always open.
+function lessonGate(l) {
+  if (!limited() || !l || l === 'test' || l.review) return null;
+  const g = l.belt != null ? Infinity : l.g;
+  if (g === 0) return null;
+  if (!auth.name) return 'blanco';
+  return g === 1 ? null : 'amarillo';
+}
+// The day's practices are used: the gate of a guest or of an account (l: the lesson that was going to start).
+const showWall = l => showGate(auth.name ? 'cuenta' : 'invitado', 'limit', null, l || null);
+function showGate(kind, trigger, stats = null, lesson = null) {
+  if (kind === 'invitado' && evoState(0).complete) kind = 'blanco'; // the belt is won: the gate is about keeping it
+  gate = { kind, trigger, lesson: lesson === 'test' ? null : lesson };
+  const cat = GATE_CAT[kind], paid = !isGuestGate(kind);
+  tn.capture('belt_gate_shown', { gate: kind, trigger, logged_in: !!auth.name, used_today: usedToday(), layout: TN_BELTS ? 'nueva' : 'actual' });
+  if (paid) tn.capture('pricing_viewed', { reason: cat, payments_on: billing.enabled, premium: billing.premium, logged_in: !!auth.name, used_today: usedToday() });
+  trackBoth('ViewContent', { content_name: 'Templo Ninja · precios', content_category: cat }, { reason: cat });
+  if (paid) trackBoth('LimiteCuenta', { content_category: cat }, { reason: cat }, true);
+  gateMode = 'register';
+  renderGate(stats);
+  if (!$('gateDlg').open) $('gateDlg').showModal();
+  (isGuestGate(kind) ? $('gateUser') : $('gateSubmit')).focus({ preventScroll: true });
+}
+function renderGate(stats) {
+  const { kind, trigger, lesson } = gate, nv = Boolean(TN_BELTS), guest = isGuestGate(kind);
+  const g = guest ? 0 : 1, st = evoState(g), left = st.total - st.done, won = trigger === 'won';
+  const perAccount = billing.accountPerDay, perGuest = billing.guestPerDay, price = '$ ' + Number(billing.amount || 0).toLocaleString('es-AR');
+  const yes = t => `<li><span class="gate-ok" aria-hidden="true">✓</span>${t}</li>`, no = t => `<li class="gate-locked"><span aria-hidden="true">🔒</span>${t}</li>`;
+  const bar = `<div class="gate-bar" role="img" aria-label="${st.done} de ${st.total} lecciones"><i style="width:${Math.round(100 * st.done / st.total)}%"></i></div>`;
+  const nums = stats ? `<div class="gate-nums"><div><b>${stats.ppm}</b><span>palabras por minuto</span></div><div><b>${stats.acc}%</b><span>precisión</span></div></div>` : '';
+  const beltName = l => nv && l && tnBeltOf(l) >= 0 ? TN_BELTS[tnBeltOf(l)].name.toLowerCase() : null;
+  let eyebrow, title, text, progress = '', list = '', badge = g;
+  if (kind === 'blanco' && st.complete) {
+    eyebrow = won ? (nv ? `Lección ${st.total} de ${st.total} · fila guía` : `Fila guía · ${st.total} de ${st.total} lecciones`) : nv ? 'Cinturón blanco completo' : 'Fila guía completa';
+    title = won ? (nv ? 'Ganaste tu cinturón blanco' : 'Completaste la fila guía') : nv ? 'Guardá tu cinturón y seguí con el amarillo' : 'Guardá tu progreso y seguí con la fila superior';
+    text = `Ya escribís la fila guía sin mirar. Hoy tu ${nv ? 'cinturón vive' : 'progreso vive'} solo en este navegador: si lo cerrás o cambiás de dispositivo, se pierde.`;
+  } else if (kind === 'blanco') { // a lesson past the white belt, before winning it
+    eyebrow = `${nv ? 'Cinturón blanco' : 'Fila guía'} · ${st.done} de ${st.total} lecciones`; progress = bar;
+    title = nv ? `El ${beltName(lesson) || 'cinturón amarillo'} es con tu cuenta gratis` : 'La fila superior es con tu cuenta gratis';
+    text = `Sin cuenta practicás ${nv ? 'el cinturón blanco' : 'la fila guía'}${left ? ` (te ${left === 1 ? 'falta 1 lección' : `faltan ${left} lecciones`})` : ''}. Creá tu cuenta gratis para seguir: tu progreso queda guardado.`;
+  } else if (kind === 'invitado') {
+    if (st.done) { eyebrow = `${nv ? 'Cinturón blanco' : 'Fila guía'} · ${st.done} de ${st.total} lecciones`; progress = bar; }
+    else { eyebrow = 'Plan gratis'; badge = null; } // practiced other things (Ninja mental, tests): no belt to show
+    title = st.done ? `Te ${left === 1 ? 'falta 1 lección' : `faltan ${left} lecciones`} para ${nv ? 'tu primer cinturón' : 'completar la fila guía'}` : `Usaste tus ${perGuest} prácticas gratis de hoy`;
+    text = st.done ? `Usaste tus ${perGuest} prácticas de hoy como invitado. Creá tu cuenta gratis y ${nv ? 'terminá el cinturón' : 'seguí'} ahora: tu progreso queda guardado.`
+      : `Creá tu cuenta gratis y seguí ahora, con ${perAccount} prácticas por día y tu progreso guardado en cualquier dispositivo.`;
+  } else if (kind === 'amarillo') {
+    eyebrow = won ? (nv ? 'Cinturones blanco y amarillo completos' : 'Fila guía y fila superior completas') : 'Acceso ilimitado';
+    title = won ? (nv ? 'Ganaste el cinturón amarillo' : 'Completaste la fila superior')
+      : nv ? `El ${beltName(lesson) || 'resto del camino'} es parte del acceso ilimitado` : 'El resto del curso es parte del acceso ilimitado';
+    text = won ? `Ya dominás la fila guía y la de arriba. ${nv ? `Te quedan ${TN_BELTS.length - 2} cinturones hasta el negro.` : 'Sigue la fila inferior y el camino hasta el cinturón negro.'}`
+      : `Con tu cuenta gratis tenés ${nv ? 'los cinturones blanco y amarillo' : 'la fila guía y la fila superior'}. Desbloqueá todo el camino hasta el cinturón negro con un pago único.`;
+    list = nv ? no('Naranja: la fila de abajo') + no('Verde, azul y marrón: textos reales') + no('Negro: hasta 70 ppm')
+      : no('Fila inferior, mayúsculas y tildes') + no('Textos reales y los cinco cinturones') + no('Cinturón negro: hasta 70 ppm');
+    list += yes('Prácticas ilimitadas, todos los días');
+  } else { // cuenta
+    if (st.done && !st.complete) { eyebrow = `${nv ? 'Cinturón amarillo' : 'Fila superior'} · ${st.done} de ${st.total} lecciones`; progress = bar; }
+    else { eyebrow = 'Plan gratis'; badge = null; }
+    title = `Entrenaste ${perAccount} veces hoy`;
+    text = `Llegaste al límite del plan gratis. Mañana tenés ${perAccount} prácticas más, o seguí ahora sin límites y con todo el camino hasta el cinturón negro.`;
+  }
+  if (guest) list = yes(nv ? 'Guardás el cinturón y tu progreso' : 'Guardás tu progreso') + yes(nv ? 'Seguís con el amarillo: la fila de arriba' : 'Seguís con la fila superior')
+    + yes(`${perAccount} prácticas por día, en vez de ${perGuest}`) + yes('Aparecés en el ranking');
+  const login = gateMode === 'login';
+  const action = guest
+    ? `<label class="field" for="gateUser">Usuario<input id="gateUser" autocomplete="username" maxlength="20" autocapitalize="none" spellcheck="false"></label>
+       <label class="field" for="gatePass">Contraseña<input id="gatePass" type="password" autocomplete="${login ? 'current-password' : 'new-password'}" maxlength="100"></label>
+       <p class="err" id="gateErr" role="alert"></p>
+       <button type="submit" class="btn primary gate-cta" id="gateSubmit">${login ? 'Entrar' : kind === 'blanco' && st.complete ? (nv ? 'Guardar mi cinturón' : 'Guardar mi progreso') : 'Seguir practicando'}</button>
+       <p class="gate-note">${login ? 'Entrás y seguís donde dejaste.' : 'Gratis. Sin email ni tarjeta.'}</p>
+       <div class="gate-links"><button type="button" class="linkbtn" id="gateSwitch">${login ? 'Crear una cuenta nueva' : 'Ya tengo cuenta'}</button><button type="button" class="linkbtn" id="gateClose">${kind === 'invitado' ? 'Vuelvo mañana' : 'Ahora no'}</button></div>`
+    : `<p class="err" id="gateErr" role="alert"></p>
+       <button type="submit" class="btn primary gate-cta" id="gateSubmit">${kind === 'amarillo' ? 'Desbloquear todo' : 'Seguir ahora'} · ${price}</button>
+       <p class="gate-note">Pago único con Mercado Pago. Sin suscripción. Al pagar aceptás los <a href="terminos.html" target="_blank">términos</a> y la <a href="reembolsos.html" target="_blank">política de reembolsos</a>.</p>
+       <div class="gate-links"><button type="button" class="linkbtn" id="gateClose">${kind === 'cuenta' ? 'Vuelvo mañana' : nv ? 'Repasar blanco y amarillo' : 'Repasar lo que ya practicaste'}</button></div>`;
+  $('gateForm').innerHTML = `
+    <div class="gate-head">${badge == null ? '' : `<span class="belt-badge gate-belt${won ? ' fresh' : ''}" style="--bc:${badge ? '#E2B33C' : '#F4F1E8'}" aria-hidden="true"></span>`}
+      <div><span class="gate-eyebrow">${eyebrow}</span><h2 id="gateTitle">${title}</h2></div></div>
+    ${progress}${nums}<p>${text}</p>${list ? `<ul class="gate-list${guest ? ' gate-gives' : ''}">${guest ? `<li class="gate-list-title">Con tu cuenta gratis</li>` : ''}${list}</ul>` : ''}${action}`;
+  $('gateClose').onclick = () => $('gateDlg').close();
+  if (guest) $('gateSwitch').onclick = () => { gateMode = login ? 'register' : 'login'; renderGate(stats); $('gateUser').focus(); };
+}
+$('gateForm').onsubmit = async e => {
+  e.preventDefault();
+  const { kind, lesson } = gate, btn = $('gateSubmit'), err = $('gateErr');
+  err.textContent = ''; btn.disabled = true;
+  if (isGuestGate(kind)) {
+    signupFrom = 'gate_' + kind;
+    const ok = await authenticate(gateMode, $('gateUser').value, $('gatePass').value, err);
+    if (!ok) { btn.disabled = false; return; }
+    gate = null; $('gateDlg').close();
+    if (lesson && mode !== 'typing') start(lesson); // the lesson that was waiting behind the gate, if the account opens it
+    return;
+  }
+  planFrom = GATE_CAT[kind]; // for checkout_clicked: which gate sent the person to pay
+  const url = await checkout('web');
+  if (url) { location.href = url; return; }
+  err.textContent = $('planErr').textContent; btn.disabled = false;
+};
+$('gateDlg').addEventListener('close', () => {
+  if (gate) tn.capture('belt_gate_dismissed', { gate: gate.kind, trigger: gate.trigger, mode: gateMode });
+  gate = null;
+});
 
 /* The pricing experiment "precio-oferta-24h" (a 24-hour offer, then $9.900) ended on 2026-10-11 with no winner: the
    base price for everyone again (api/_billing.js), also for the accounts that saw the offer. */
@@ -1963,7 +2098,7 @@ $('dojoTrack').onchange = e => { dojo.track = e.target.value; saveDojo(); render
 $('dojoHumor').onchange = e => { dojo.humor = e.target.checked; saveDojo(); };
 $('dojoGuided').onchange = e => { dojo.guided = e.target.checked; saveDojo(); };
 $('dojoStart').onclick = trainDojo;
-$('dojoUnlock').onclick = () => showPlan('limit');
+$('dojoUnlock').onclick = () => showWall();
 $('dojoReview').onclick = () => dojo.track === 'typing' ? startDrill() : trainDojo();
 $('dojoChallenge').onclick = () => { if (dojo.track === 'typing') start('test', 'ciegas', 'daily-' + Dojo.day()); else { cogTrack = dojo.track; startQuiz('sim'); } };
 $('dojoInvite').onclick = () => openChallenge(bestScore());

@@ -209,6 +209,28 @@ dialog::backdrop{background:rgba(10,14,18,.45)}
 .pv-cd i{font-style:normal;color:var(--muted);font-weight:800}
 .pv-cd .lbl{margin-right:4px}
 .dlg .pv-note{font-size:.8rem}
+/* Belt gates (app.js): the walls of the free plan */
+.gate{gap:14px}
+.gate-head{display:flex;align-items:center;gap:14px}
+.gate-head h2{font-size:1.35rem;line-height:1.15}
+.gate-belt{width:56px;height:20px;margin:0;flex:none;border:1px solid var(--line)}
+.gate-eyebrow{display:block;font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:2px}
+.gate-bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.gate-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.gate-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gate-nums div{background:var(--panel);border-radius:10px;padding:8px 12px;display:grid}
+.gate-nums b{font-family:var(--display);font-size:1.3rem;font-weight:800;color:var(--ink)}
+.gate-nums span{font-size:.75rem;color:var(--muted)}
+.gate-list{list-style:none;margin:0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;display:grid;gap:4px;font-size:.88rem;color:var(--ink)}
+.gate-list li{display:flex;gap:8px;align-items:baseline}
+.gate-list .gate-list-title{font-weight:800}
+.gate-list .gate-locked{color:var(--muted)}
+.gate-ok{color:var(--accent);font-weight:800}
+.gate .field input{font-size:16px} /* 16px: phones do not zoom into the field */
+.gate .err:empty{display:none}
+.gate-cta{width:100%;justify-content:center;min-height:46px}
+.dlg .gate-note{font-size:.78rem;text-align:center}
+.gate-links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .hist{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
 .hist table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:480px}
 .hist th,.hist td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}

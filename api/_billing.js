@@ -1,12 +1,14 @@
 // Freemium rules and Mercado Pago payments.
 // Free plan: FREE_PER_DAY practice sessions per day without an account, FREE_ACCOUNT_PER_DAY with a free account
-// (the reason to create one when the guest practices run out). Unlimited access: a one-time payment ("aporte al templo",
+// (the reason to create one when the guest practices run out). The course also has two gates, kept by the page (app.js,
+// "Belt gates"): guests take the first group of lessons (white belt), a free account the second (yellow belt), and the
+// rest of the path is part of the unlimited access. Unlimited access: a one-time payment ("aporte al templo",
 // Checkout Pro) that never expires. Monthly subscriptions (preapproval API) from before still count until they end.
 const { redis, HttpError } = require('./_lib');
 const { reportPurchase } = require('./_meta');
 const posthog = require('./_posthog');
 
-const DAY_MS = 86400e3, GRACE_MS = 3 * DAY_MS, FREE_PER_DAY = 5, FREE_ACCOUNT_PER_DAY = 10;
+const DAY_MS = 86400e3, GRACE_MS = 3 * DAY_MS, FREE_PER_DAY = 6, FREE_ACCOUNT_PER_DAY = 13;
 const env = name => (process.env[name] || '').trim();
 
 function settings() {
