@@ -79,3 +79,37 @@ Tipos: **directa** (lo vimos), **declarado** (lo dice la empresa), **estimación
 - **Medición:** el evento `payment_succeeded` y `pro_cta_clicked` no existen en el proyecto (taxonomía 2026-10-07). Las compras no se pueden ver en PostHog.
 ### Calidad del proceso
 - El buscador devolvió fechas de 2026 para notas de 2021 y 2023. Regla: fechar siempre con la página abierta.
+
+## 2026-10-12
+- **Interno (PostHog, observación directa):** semana del 5/10 con 676 visitas, 267 prácticas, 46 vieron precios, 3 clics en pagar, 1 compra (`payment_succeeded` el 2026-10-07) y 1 pago fallido. `payment_succeeded` y `pro_cta_clicked` ya existen. Por anuncio: `velocidad` 481 personas / 257 practican / 40 ven precios / 1 clic en pagar; sin utm 165 / 6 / 12 / 5. Pistas en 14 días: figuras 37, mixto 28, inglés 13, lógica 11, números 9.
+- **Meta (AR, activos, 2026-10-12, observación directa):** "test de IQ" 113 (97 el 10-07); "test psicotécnico" 2 (nuestro y Alkemy, B2B); "velocidad de escritura teclado" 0; "mecanografía" 4 (ninguno de un competidor); "test de inglés nivel" 141 (formato "test de 2 minutos").
+- **Ratatype Plus** US$49,99/año o US$9,99/mes, con ilimitado, sin anuncios y certificados (https://www.ratatype.com/ratatype-plus/, observación directa).
+- **123test:** IQ clásico gratis de 10 preguntas; profesional de 44 preguntas US$12,99; menú con "Autumn offer (70% off)" sin condiciones visibles (https://www.123test.com/iq-test/, observación directa).
+- **Mercado Libre AR:** sin fuente de 2026 sobre un test de lógica; solo testimonios y notas de 2021-2023 (búsqueda web, 2026-10-12).
+- **Repo:** los experimentos `iq-desafio-directo` y `precio-oferta-24h` se cerraron el 2026-10-11 (commit 0a10df8).
+
+
+## 2026-11-02
+
+### Interno (PostHog, proyecto 642163, solo lectura; consultado 2026-11-02)
+- PostHog · directa · usuarios únicos por semana (lun-dom): visitas 115 / 676 / 1.080 / 1.134 / 384 (semanas del 28-sep, 5-oct, 12-oct, 19-oct, 26-oct). Terminan práctica: 24 / 179 / 351 / 367 / 124. Ven precios: 14 / 46 / 72 / 20 / 7. Clic en pagar: 3 / 3 / 3 / 2 / 0. `payment_succeeded`: 0 / 1 / 1 / 0 / 0.
+- PostHog · directa · vistas de precios por usuario que termina práctica: 58% → 26% → 21% → 5% → 6%. La caída empieza la semana del 19-oct, dos semanas después de subir el plan gratis (5/10 por día).
+- PostHog · directa · últimos 14 días por anuncio (`utm_content`): `velocidad` 870 usuarios, 256 terminan práctica, 12 ven precios, 1 clic en pagar; `iq` 466 / 160 / 2 / 0; `teclado` 64 / 32 / 3 / 0; `iq-serie`, `vel-evolucion`, `sl_simulacro`: menos de 30 usuarios cada uno.
+- PostHog · directa · motivos de `pricing_viewed` (28 días): `limit` 184 vistas (95 usuarios), `upgrade` 53, `limite_cuenta` 28, `cinturon_amarillo` 28.
+- PostHog · directa · desafíos (21 días): `battle_created` 21 usuarios, `battle_shared` 18, `battle_link_opened` 24, `battle_accepted` 22. `pro_cta_clicked`: 12 eventos en 5 semanas (5/3/3/1 usuarios por semana).
+- Cierra la alerta de medición del 2026-10-07: `payment_succeeded` y `pro_cta_clicked` ya existen.
+- Acceso: la primera consulta cayó en el proyecto 683617 (otro producto); se cambió al 642163 con switch-project. Sin escrituras.
+
+### Anuncios en Argentina (Biblioteca de anuncios de Meta, consultada 2026-11-02)
+- Meta Ad Library · directa · "IQ Mental" (página nueva) lanzó el 2026-11-02 (~04:00 UTC) al menos 12 anuncios iguales con el gancho "¿Te creés más inteligente que el argentino promedio?" y bandera de Argentina. Gancho de identidad local.
+- Meta Ad Library · directa · "test de psicotécnico" en AR: 5 resultados, ninguno de preparación (Alkymetrics/Alkemy B2B para empresas, un perfil de España, un "Test de CI"). "mecanografía velocidad de escritura": 2 anuncios de un curso de ofimática. "Pruebas de ingreso trabajo test online": 1, irrelevante.
+- Meta Ad Library · directa · "test de IQ" en AR devuelve un total estimado de 21.545 y muchos anuncios en alemán o sueco: el filtro de país incluye anunciantes extranjeros. No comparable con los 75/97 anteriores.
+
+### Precios y ofertas de proyectos en seguimiento (observación directa)
+- ratatype.com/ratatype-plus · directa · sin cambios: US$49,99/año o US$9,99/mes; ilimitado, sin anuncios, certificados. El descuento aplica solo al primer pago.
+- 123test.com/iq-test · directa · IQ clásico gratis de 10 preguntas; versión profesional de 44 preguntas, US$12,99. Menú con "Autumn offer (70% off)". No pude ver cuándo se muestra la oferta.
+- practiceaptitudetests.com/pricing · directa · gratis: una prueba de cada formato y seguimiento básico; Pro £39/año o £29/mes, renovación automática, sin reembolso una vez iniciado el acceso.
+- monkeytype.com · estimación · no encontré cifras de ingresos de 2026 confiables; las que circulan son de creadores de contenido. Queda "desconocido".
+### Calidad del proceso
+- typing.com/student/premium dio 404; keybr.com no mostró el plan en la página de inicio. Sin dato nuevo de ambos.
+- Mercado Libre y Techint (pedido BL-006): las búsquedas siguen devolviendo la nota de iProfesional de 2021 con fecha de 2026 en el buscador; ninguna fuente nueva sobre el test.

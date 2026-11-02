@@ -1,5 +1,7 @@
 # Competidores y referentes en seguimiento
 
+Última revisión: 2026-11-02 (precios de Ratatype, 123test y practiceaptitudetests sin cambios).
+
 Tráfico: estimaciones de terceros (Semrush, salvo que se indique Similarweb), agosto de 2026, consultadas el
 2026-10-05. Son estimaciones: en sitios chicos, poco confiables.
 
@@ -30,6 +32,10 @@ Tráfico: estimaciones de terceros (Semrush, salvo que se indique Similarweb), a
 
 - typequicker.com: certificado de velocidad gratis con link público y registro (observación directa 2026-10-07). Referencia para OP-002.
 - jobcannon.io (UK): certificado de velocidad gratis, firmado y verificable por link, prueba de 5 min (observación directa 2026-10-07). Referencia para OP-002.
+- artypist.com: curso y test de velocidad en español; certificado al terminar las lecciones (guía de Genbeta, vigencia sin confirmar, 2026-10-12). Referencia para OP-002.
+
+- IQ Mental (página de Meta, AR): lanzó el 2026-11-02 anuncios con el gancho "argentino promedio". Sitio y modelo sin identificar (observación directa, Meta Ad Library). Alta en gancho local.
+- Alkymetrics / Alkemy (alkemy.com, B2B): pruebas de evaluación para empresas; anuncia en AR. Sirve para entender qué tests usan las empresas; no es competidor directo.
 
 ## Descartados
 - typelab.org: los resúmenes de búsqueda decían US$74K/mes; la fuente verificada (TrustMRR, Stripe) dice **US$10/mes**. Sin tracción.
