@@ -8,9 +8,9 @@
 | UX-004 | 2026-10-07 | En el celular con `velocidad`, 28 terminan una práctica y solo 9 ven precios | propuesto (BL-002 postergado; investigar con BL-025) | — |
 | UX-005 | 2026-10-12 | Casi nadie vuelve otro día: 12 de 522 (2%) en la cohorte de hace 2 a 7 días | propuesto (BL-019 medición ahora; BL-020 experimento después) | — |
 | UX-006 | 2026-10-12 | En el celular el teclado pierde el foco en Teclado Ciego (velo "Tocá acá para seguir escribiendo"); 129 de 194 terminan la lección | propuesto (**próximo**, BL-018) | — |
-| UX-007 (en el informe del 2026-11-02: UX-005) | 2026-11-02 | 114 terminan una práctica y solo 6 ven precios; el muro de pago aparece al ganar el cinturón amarillo y el límite diario casi no se alcanza | propuesto (experimentar) | — |
-| UX-008 (en el informe del 2026-11-02: UX-006) | 2026-11-02 | `iq_exp_activated` y `$feature_flag_called` tienen 0 eventos en 14 días: los experimentos `iq-desafio-directo` y `precio-oferta-24h` no se miden | propuesto (arreglar ya) | — |
-| UX-009 (en el informe del 2026-11-02: UX-007) | 2026-11-02 | El hito de medición (`checkpoint_shown`) lo ven 192 personas y solo 24 actúan | propuesto (investigar más) | — |
+| UX-007 (en el informe del 2026-11-02: UX-005) | 2026-11-02 | 114 terminan una práctica y solo 6 ven precios; el muro de pago aparece al ganar el cinturón amarillo y el límite diario casi no se alcanza | **próximo** (BL-026, experimento `oferta-post-medicion`, a aprobar) | — |
+| UX-008 (en el informe del 2026-11-02: UX-006) | 2026-11-02 | `iq_exp_activated` y `$feature_flag_called` tienen 0 eventos en 14 días: los experimentos `iq-desafio-directo` y `precio-oferta-24h` no se miden | **resuelto** 2026-11-02 (coordinador: no es un bug; los dos experimentos se cerraron el 11/10 y el código ya no manda esos eventos) | — |
+| UX-009 (en el informe del 2026-11-02: UX-007) | 2026-11-02 | El hito de medición (`checkpoint_shown`) lo ven 192 personas y solo 24 actúan | propuesto (investigar más, BL-027) | — |
 
 UX-003 y UX-002 actualizados el 2026-10-07 (19 llegaron al límite, 4 tocaron crear cuenta, 5 se registraron). UX-001 sigue resuelto.
 

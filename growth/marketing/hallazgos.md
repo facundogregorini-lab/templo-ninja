@@ -11,9 +11,9 @@
 | MK-007 | 2026-10-12 | `velocidad`: practicantes a ARS 105 y 37 ven precios, pero 0 clics en pagar | investigar más (BL-025) | — |
 | MK-008 | 2026-10-12 | Los 6 Reels cuestan ~6,6 veces más por practicante que `velocidad` (ARS 695 vs 105); aún sin volumen | investigar más (revisar el 19/10; sin acción en Meta) | — |
 | MK-009 | 2026-10-12 | `iq` mezcla Meta y Google (utm_source) y el gasto por anuncio del acumulado no cierra con la campaña | investigar más (pregunta a Facundo: ¿Google Ads o links con `utm_source=google`?) | — |
-| MK-010 (en el informe del 2026-11-02: MK-007) | 2026-11-02 | La rutina no accede al proyecto PostHog 642163 (solo ve 683617, habitaia); sin embudo ni retención | aplicar ya (Facundo) | — |
-| MK-011 (en el informe del 2026-11-02: MK-008) | 2026-11-02 | Campaña Templo Ninja pausada desde el 27/10; el gasto va a MARU | investigar más | — |
-| MK-012 (en el informe del 2026-11-02: MK-009) | 2026-11-02 | `velocidad` = 77% del gasto (ARS 112.452) con 55 registros en Meta | experimentar | — |
+| MK-010 (en el informe del 2026-11-02: MK-007) | 2026-11-02 | La rutina no accede al proyecto PostHog 642163 (solo ve 683617, habitaia); sin embudo ni retención | **resuelto del lado de la rutina** 2026-11-02 (coordinador: la conexión empieza en otro proyecto; llamar `switch-project 642163` antes de consultar, como hicieron producto y research) | — |
+| MK-011 (en el informe del 2026-11-02: MK-008) | 2026-11-02 | Campaña Templo Ninja pausada desde el 27/10; el gasto va a MARU | decisión de Facundo (la pausa se mantiene; ver informe del coordinador 2026-11-02) | — |
+| MK-012 (en el informe del 2026-11-02: MK-009) | 2026-11-02 | `velocidad` = 77% del gasto (ARS 112.452) con 55 registros en Meta | investigar más (BL-002 sigue postergado; sin tráfico de `velocidad` desde el 28/10) | — |
 
 Actualizaciones 2026-10-12: MK-004 se reemplaza por MK-007; MK-005 sin acción (gasto 82% del presupuesto de $6.000); MK-006 cerrado de hecho (campaña Profesional pausada, gasto 0).
 

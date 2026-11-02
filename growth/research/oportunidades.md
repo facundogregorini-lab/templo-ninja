@@ -8,8 +8,8 @@
 | OP-004 | 2026-10-07 | "Pago único, sin suscripción" como mensaje junto a la oferta y en el anuncio iq | investigar más (BL-016, backlog: corre `home-nueva`; mirar antes BL-025; coordinador 2026-10-12) | — |
 | OP-005 | 2026-10-12 | Anuncio "test de inglés de 2 minutos" hacia la pista de inglés (exploratoria) | investigar más (BL-022, backlog; 141 anuncios de test de inglés en AR; 13 personas en la pista de inglés en 14 días) | — |
 | OP-006 | 2026-10-12 | Página en español para "test de velocidad de escritura" que capture tráfico orgánico (exploratoria) | investigar más (BL-023, backlog; falta volumen de búsquedas) | — |
-| OP-007 (en el informe del 2026-11-02: OP-005) | 2026-11-02 | Percentil real entre jugadores de Templo Ninja en el resultado de la medición y del IQ ninja, con botón de desafío | **investigar más** (exploratoria; falta ver si hay muestra suficiente) | — |
-| OP-008 (en el informe del 2026-11-02: OP-006) | 2026-11-02 | Gancho local "argentino promedio" en el anuncio iq | **archivada por ahora** (no hay dato real del promedio argentino; no resuelve el cuello de botella) | — |
+| OP-007 (en el informe del 2026-11-02: OP-005) | 2026-11-02 | Percentil real entre jugadores de Templo Ninja en el resultado de la medición y del IQ ninja, con botón de desafío | **investigar más** (BL-028, backlog; exploratoria) | — |
+| OP-008 (en el informe del 2026-11-02: OP-006) | 2026-11-02 | Gancho local "argentino promedio" en el anuncio iq | **descartada** 2026-11-02 (BL-029, coordinador: no hay dato real del promedio argentino; no ataca el cuello de botella) | — |
 
 El detalle está en `informes/2026-10-05.md` (OP-001 a OP-003), `informes/2026-10-07.md` (actualizaciones y OP-004) y `informes/2026-10-12.md` (OP-005, OP-006 y actualizaciones).
 
