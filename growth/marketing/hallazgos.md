@@ -8,7 +8,10 @@
 | MK-004 | 2026-10-07 | `velocidad` trae practicantes baratos (ARS 258) pero solo 7 de 116 ven precios | investigar más | — |
 | MK-005 | 2026-10-07 | El conjunto gasta ~52% del presupuesto y no sale del aprendizaje (7 resultados) | investigar más | — |
 | MK-006 | 2026-10-07 | Campaña Profesional activa sin datos legibles en Meta; `pro-a`/`pro-b` solo con cargas automáticas | investigar más | — |
+| MK-007 | 2026-11-02 | La rutina no accede al proyecto PostHog 642163 (solo ve 683617, habitaia); sin embudo ni retención | aplicar ya (Facundo) | — |
+| MK-008 | 2026-11-02 | Campaña Templo Ninja pausada desde el 27/10; el gasto va a MARU | investigar más | — |
+| MK-009 | 2026-11-02 | `velocidad` = 77% del gasto (ARS 112.452) con 55 registros en Meta | experimentar | — |
 
 No vuelvas a proponer un hallazgo descartado salvo que haya evidencia nueva y fuerte; si es así, decilo explícitamente.
 
-Detalle en `informes/2026-10-05.md` y `informes/2026-10-07.md`.
+Detalle en `informes/2026-10-05.md`, `2026-10-07.md` y `2026-11-02.md`.
