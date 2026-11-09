@@ -1,51 +1,24 @@
 # Estado de Growth — Templo Ninja
 
-Última actualización: 2026-10-05 (primera ejecución del research externo).
+Última actualización: 2026-11-09 (coordinador).
 
 ## Cuello de botella actual
-**De ver precios a comprar.** Últimos 14 días (PostHog, proyecto 642163):
-
-| Paso | Usuarios |
-| --- | --- |
-| Visitas (`$pageview`) | 132 |
-| Empezaron una práctica | 30 |
-| Terminaron una práctica | 26 |
-| Vieron precios (`pricing_viewed`) | 20 (12 por límite sin cuenta) |
-| Clic en pagar (`checkout_clicked`) | 7 |
-| Llegaron a Mercado Pago (`checkout_started`) | 3 |
-| Pagaron (`payment_succeeded`) | 0 |
-
-Por anuncio (primera visita con `utm_content`): `iq` 42 usuarios, 13 practican, 10 ven precios y 1 hace clic
-en pagar. `velocidad` 41 usuarios, 14 practican, 2 ven precios. `templo` 13 usuarios, ninguno practica.
+**Llegar a ver la oferta.** Semana del 2/11 (PostHog 642163, personas únicas): 335 visitantes, 213 practican, 10 ven precios, 1 clic en pagar, 0 pagos. Entre el 5/10 y el 1/11, Meta gastó ARS 127.929 y hubo 2 pagos en PostHog. Meta de Templo Ninja está apagada desde el 27/10; el tráfico con UTM viene de Google (sin gasto visible). Detalle: `coordinador/informes/2026-11-09.md`.
 
 ## Experimentos en curso
-
-### `iq-desafio-directo` (OP-001), desde 2026-10-05
-- **Quién:** visitantes del anuncio `iq` (`utm_content=iq`), 50/50 con el flag de PostHog. Solo cuentan los que además interactúan de verdad (`iq_exp_activated`): las cargas automáticas de Instagram, Facebook y Meta no entran (UX-001).
-- **Cambio (`test`):** el botón principal de Ninja mental lleva al desafío de 5 minutos, y debajo del IQ aparece el plan ilimitado ($4.900, pago único). El IQ sigue siendo gratis.
-- **Métrica que decide:** % de visitantes del anuncio que hacen clic en pagar (`checkout_clicked`). Línea de base: 1 de 42.
-- **Señal temprana:** % que completa el desafío (`practice_completed` con `kind=desafio-5-min`). Línea de base: 1 de 13 que practican.
-- **Métrica final:** compras por visitante (`payment_succeeded`); con este volumen, no concluyente.
-- **Control de daños:** % de visitantes que empieza a practicar (`practice_started`).
-- **Duración:** hasta 60 visitantes por grupo o 3 semanas, lo que ocurra primero.
-- **Regla de decisión:** si `test` duplica o más el % de clic en pagar sin bajar el % que practica, pasa al 100% y se aplica lo mismo al anuncio `velocidad` (directo a la medición de 1 minuto). Si no se mueve, se descarta y se revisa el precio.
-- **Cambio en Meta (2026-10-05):** se pausó el anuncio `templo` (13 visitantes, ninguno practicó) para concentrar el presupuesto en `iq`.
+- **A/B de la portada `/` contra `/nueva`:** regla propuesta en el informe del 2026-11-09 (pendiente de Facundo).
+- Cerrados el 2026-10-11 sin ganador: `iq-desafio-directo` y `precio-oferta-24h`.
 
 ## Cambios recientes a vigilar
-- **2026-10-05, plan gratis de 3/6 a 5/10 prácticas por día.** Revisar el 19/10: clics en pagar por visitante real y vistas de precios por motivo. Si los clics bajan, volver a 3/6.
-
-- **2026-10-05, versión profesional (BL-010):** página `/profesional`, pista 🧩 Lógica y series (también la ven los dos grupos de `iq-desafio-directo`, que arranca el mismo día) y simulacro estilo Mercado Libre. Revisar el 19/10: `pro_cta_clicked`, prácticas de lógica y simulacros por empresa, y si llevan a ver precios y a pagar.
+- Muros por cinturón (2026-10-15): la oferta aparece al ganar el cinturón amarillo; las vistas de precios cayeron de 72 a 20 por semana. Plan gratis hoy: 6 y 13 prácticas por día.
 
 ## Próximo
-Ver `growth/backlog.md`. Esta semana:
-- **BL-002** (a aprobar): experimento para el anuncio `velocidad`, directo a la medición de 1 minuto.
-- **BL-003**: investigar el abandono al crear la cuenta (pedido a producto, abajo).
+BL-015, BL-016, BL-017 (arreglos); BL-014 (pregunta); BL-003 (Producto). Ningún experimento nuevo hasta cerrar el A/B.
 
 ## Pedidos del coordinador
-Cada rutina responde primero lo que le toca, en una sección "Pedidos del coordinador" de su informe.
-- **Producto:** ver las grabaciones de quienes tocaron "crear cuenta" al llegar al límite y no la terminaron (BL-003). ¿Dónde abandonan y por qué?
-- **Marketing:** visitas reales por semana de `iq` y `velocidad`, para estimar cuánto tarda cada experimento en llegar a 60 personas por grupo.
-- **Research:** qué empresas argentinas usan tests online de aptitud en sus búsquedas y cómo se busca eso en Google (BL-006). Solo con fuente pública enlazada: cada empresa nueva para `/profesional` necesita una fuente; revisar también que las cinco de hoy sigan vigentes.
+- **Producto:** `belt_gate_shown`/`belt_gate_dismissed` antes y después del 15/10 y abandono al crear cuenta (BL-003); necesita PostHog 642163.
+- **Marketing:** costo del canal Google si Facundo da el gasto.
+- **Research:** fuentes 2026 de Mercado Libre, Techint y Unilever para `/profesional`.
 
 ## Estructura de Growth
 | Rutina | Cuándo (hora de Argentina) | Entrega | Instrucciones |
