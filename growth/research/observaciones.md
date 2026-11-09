@@ -79,3 +79,17 @@ Tipos: **directa** (lo vimos), **declarado** (lo dice la empresa), **estimación
 - **Medición:** el evento `payment_succeeded` y `pro_cta_clicked` no existen en el proyecto (taxonomía 2026-10-07). Las compras no se pueden ver en PostHog.
 ### Calidad del proceso
 - El buscador devolvió fechas de 2026 para notas de 2021 y 2023. Regla: fechar siempre con la página abierta.
+
+## 2026-11-09 · Tercera ejecución
+### Interno (PostHog, proyecto 642163, solo lectura, consultado el 2026-11-09)
+- 14 días: 678 visitantes, 378 empiezan práctica, 291 terminan, 17 ven precios, 1 clic en pagar, 1 llega a Mercado Pago, 0 pagan; 43 se registran. El evento `payment_succeeded` ya existe: 2 compras en 6 semanas.
+- Vistas de precios por semana (28-sep a 09-nov): 14 / 46 / 72 / 20 / 7 / 10 con visitas 115 / 676 / 1.080 / 1.134 / 384 / 335. Inferencia nuestra: la caída coincide con los muros por cinturón (15-oct).
+- 28 días por `utm_content`: `velocidad` 1.734 personas (60 ven precios, 2 clics), `iq` 746 (9, 0), `teclado` 296 (13, 0). Batallas creadas por semana: 3, 17, 3, 2, 1, 0.
+### Externo
+- Meta AR (activos, 2026-11-09), observación directa solo de títulos: "test de IQ" 120 anuncios, la mayoría de páginas anónimas con el mismo gancho "Responde 30 preguntas y descubre tu resultado"; "¿Estás en el top 2%?" en español. "psicotécnico práctica" 0; "velocidad de escritura teclado" 0; "mecanografía" 6, ninguno competidor.
+- myiq · terceros (OCU, Portal da Queixa, 2026) · test de ≈0,50–1 € seguido de cobro de 29,99 €. Sin verificar con la empresa.
+- Certificados gratis: TypeQuicker, typingtest.me, fastfingers.net (terceros/sitios propios, sin abrir cada página). Ratatype 5 € por certificado: una nota de tercero, no verificada.
+- jobcannon.io/es · observación del buscador · test de aptitud cognitiva gratis de 32 preguntas en español (verbal incluido).
+- Monkeytype, typing.com, keybr, TypeRacer: sin cambios de precio ni producto con fuente (el buscador devolvió páginas no oficiales).
+### Calidad del proceso
+- Primer intento de PostHog cayó en otro proyecto (la sesión arrancó en el 683617); se cambió al 642163 antes de usar datos. Los números de este informe son del 642163.
