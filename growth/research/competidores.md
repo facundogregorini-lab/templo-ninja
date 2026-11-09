@@ -31,6 +31,8 @@ Tráfico: estimaciones de terceros (Semrush, salvo que se indique Similarweb), a
 - typequicker.com: certificado de velocidad gratis con link público y registro (observación directa 2026-10-07). Referencia para OP-002.
 - jobcannon.io (UK): certificado de velocidad gratis, firmado y verificable por link, prueba de 5 min (observación directa 2026-10-07). Referencia para OP-002.
 
+- jobcannon.io/es: test de aptitud cognitiva gratis de 32 preguntas en español, con razonamiento verbal (buscador, 2026-11-09). Referencia para BL-011.
+
 ## Descartados
 - typelab.org: los resúmenes de búsqueda decían US$74K/mes; la fuente verificada (TrustMRR, Stripe) dice **US$10/mes**. Sin tracción.
 - metyping.com: US$39 de ingresos totales (TrustMRR). Sin tracción.
