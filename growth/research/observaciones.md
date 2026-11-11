@@ -79,3 +79,12 @@ Tipos: **directa** (lo vimos), **declarado** (lo dice la empresa), **estimación
 - **Medición:** el evento `payment_succeeded` y `pro_cta_clicked` no existen en el proyecto (taxonomía 2026-10-07). Las compras no se pueden ver en PostHog.
 ### Calidad del proceso
 - El buscador devolvió fechas de 2026 para notas de 2021 y 2023. Regla: fechar siempre con la página abierta.
+
+## 2026-10-12
+- **Interno (PostHog, observación directa):** semana del 5/10 con 676 visitas, 267 prácticas, 46 vieron precios, 3 clics en pagar, 1 compra (`payment_succeeded` el 2026-10-07) y 1 pago fallido. `payment_succeeded` y `pro_cta_clicked` ya existen. Por anuncio: `velocidad` 481 personas / 257 practican / 40 ven precios / 1 clic en pagar; sin utm 165 / 6 / 12 / 5. Pistas en 14 días: figuras 37, mixto 28, inglés 13, lógica 11, números 9.
+- **Meta (AR, activos, 2026-10-12, observación directa):** "test de IQ" 113 (97 el 10-07); "test psicotécnico" 2 (nuestro y Alkemy, B2B); "velocidad de escritura teclado" 0; "mecanografía" 4 (ninguno de un competidor); "test de inglés nivel" 141 (formato "test de 2 minutos").
+- **Ratatype Plus** US$49,99/año o US$9,99/mes, con ilimitado, sin anuncios y certificados (https://www.ratatype.com/ratatype-plus/, observación directa).
+- **123test:** IQ clásico gratis de 10 preguntas; profesional de 44 preguntas US$12,99; menú con "Autumn offer (70% off)" sin condiciones visibles (https://www.123test.com/iq-test/, observación directa).
+- **Mercado Libre AR:** sin fuente de 2026 sobre un test de lógica; solo testimonios y notas de 2021-2023 (búsqueda web, 2026-10-12).
+- **Repo:** los experimentos `iq-desafio-directo` y `precio-oferta-24h` se cerraron el 2026-10-11 (commit 0a10df8).
+
