@@ -79,3 +79,33 @@ Tipos: **directa** (lo vimos), **declarado** (lo dice la empresa), **estimación
 - **Medición:** el evento `payment_succeeded` y `pro_cta_clicked` no existen en el proyecto (taxonomía 2026-10-07). Las compras no se pueden ver en PostHog.
 ### Calidad del proceso
 - El buscador devolvió fechas de 2026 para notas de 2021 y 2023. Regla: fechar siempre con la página abierta.
+
+## 2026-11-16 · Tercera ejecución
+### Interno (PostHog 642163, solo lectura)
+- Visitantes por semana: 676 (5-oct), 1.080 (12-oct), 1.134 (19-oct), 384 (26-oct), 335 (2-nov), **48 (9-nov)**. Meta: 797 y 765 personas (12 y 19-oct), 146 (26-oct), 0 desde el 2-nov. Google: todo pago (1.169 personas con `gclid`/`gad_source` desde el 5-oct; orgánico 23), 38 la semana del 9-nov · directa · inferencia: campañas pausadas.
+- Muros por cinturón (desde 15-oct): 214 invitados ven el cartel por límite → 71 crean cuenta (33%). 45 ven precio → 3 clics en pagar (7%) → 0 compras · directa.
+- Por dispositivo (desde 15-oct): celular 1.813 visitantes / 829 practican / 41 registros / 23 ven precios / **0 clics**; compu 519 / 311 / 50 / 22 / **3 clics** · directa.
+- Compras: 2 `payment_succeeded` (7 y 13 de octubre). 12 `checkout_started` desde el 5-oct; los 4 desde el 24-oct sin pago · directa.
+- `iq-desafio-directo` y `precio-oferta-24h` cerrados el 2026-10-11 (README): el segundo con 0 clics en pagar en ambas variantes · directa (repo).
+- `payment_succeeded` y `pro_cta_clicked` ya existen (corrige la alerta del 2026-10-07) · directa.
+### Anuncios (Biblioteca de Meta, AR, activos)
+- "test de IQ": 114 (97 el 7-oct). Ganchos: "Responde 30 preguntas y descubre tu resultado" (páginas con nombre de persona, International Brain Test), "¿Estás en el top 2%?" (IQ Masters, pagan en TRY), "¿Cuántos de los 25 resuelves?" (IQTestPath). Todos en USD o TRY · directa (solo títulos).
+- "mecanografía" 3 (ninguno competidor), "test psicotécnico" 1 (Alkemy, B2B), "escribir más rápido teclado" 6 (ninguno de tipeo) · directa.
+### Precios y oferta
+- Ratatype Plus · directa · US$9,99/mes o US$49,99/año; campo de código promocional, "el descuento aplica solo al primer pago".
+- 123test · directa · sin cambios; "Autumn offer (70% off)" en el menú.
+- practiceaptitudetests · directa · Pro £39/año o £29/mes; sin reembolso una vez empezado el acceso.
+- ARTypist · directa · certificado verificable por código solo en el curso Pro (precio no visible, página de precios 404).
+- JobTestPrep · directa · tiene sitio en español (España y tests globales), sin Argentina.
+- IQ Masters · estimación (screensdesign, apppricinglab) · suscripción semanal con prueba de 3 días; compras integradas de US$7,99 a US$19,99.
+- Reverse trial · estimación (blogs de Amplitude, Userpilot, Inflection) · +10% a 40% de conversión frente al freemium atribuido a Elena Verna; sin estudio controlado.
+- CyberMonday 2026 fue del 2 al 4-nov; Black Friday 27-nov · prensa.
+### Empresas argentinas (BL-006)
+- YPF Jóvenes Profesionales · prensa (iProfesional, 22-ene-2026) · "pruebas de inglés y razonamiento", dinámica grupal virtual, assessment. Fuente más nueva que la de `/profesional`.
+- Mercado Libre · prensa (Cronista, 7-abr-2021) · "test psicotécnico de 40 preguntas en 20 minutos": contradice los 30 min de la otra fuente de 2021.
+- Techint · prensa (iProfesional, 23-sep-2024) · gira con inscripción hasta el 30-nov de 2024; no menciona tests.
+- Unilever · sin fuente argentina de 2026 ("Futuros Líderes" no aparece; vigente: pasantía Únicxs).
+- PepsiCo Next Gen · prensa (Mercado, 11-sep-2025) · no describe tests. No sirve para `/profesional`.
+### Calidad del proceso
+- El buscador volvió a poner "26/6/2026" a notas de 2024 (iProfesional): la regla de fechar con la página abierta sigue haciendo falta.
+- El conector de PostHog arrancó en otro proyecto de la organización: confirmar siempre `project-get` = 642163 antes de consultar.
