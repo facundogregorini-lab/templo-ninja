@@ -16,6 +16,7 @@
 | 8/10 al 15/11 | iq | 1.937 | 20 | 18 | 6 | 0 | 323 |
 | 8/10 al 15/11 | iq-desafio, iq-figuras, vel-ppm, vel-trabajo | 2.636 | 16 | 12 | 4 | 0 | — |
 | 9 al 15/11 (últimos 7 días) | todos | 0 | — | — | — | — | — |
+| 16 al 22/11 | todos | 0 | — | — | 0 | 0 | — |
 
 Por semana (conjunto principal "Vieron precios"): 8–14/10 ARS 40.491, CTR 2,00%, 75 ViewContent · 15–21/10 ARS 40.116, CTR 2,17%, 84 ViewContent · 22–27/10 ARS 28.666, CTR 2,22%, 62 ViewContent. Conjunto "Vieron precios - Reels": ARS 6.937 en total y 6 ViewContent. Costo por cuenta creada (`velocidad`): ARS 2.109 (49 cuentas en PostHog). Pagos de Meta: 0.
 
@@ -31,6 +32,7 @@ Por semana (conjunto principal "Vieron precios"): 8–14/10 ARS 40.491, CTR 2,00
 - 2026-10-11: cierran `iq-desafio-directo` y `precio-oferta-24h` (README).
 - 2026-10-27: Facundo pausa la campaña. Desde entonces, 0 gasto. "TN | Profesional | AR | Test01" también está pausada, sin gasto.
 - 2026-11-16: Growth propone reactivar con un conjunto que optimice por CompleteRegistration (MK-007), pendiente de aprobación.
+- 2026-11-23: sin cambios en la cuenta desde el 15/11 (registro de actividad vacío); las 5 campañas siguen pausadas. Growth vuelve a proponer reactivar (MK-010): opción A ARS 6.000 por día o B ARS 3.000 por día, 14 días. Pendiente de Facundo.
 
 ## Google Ads (cuenta 5235658460; esta rutina no ve costos)
 | Período | Anuncio (`utm_content`) | Usuarios | Practican | Ven precios | Cuentas |
@@ -40,7 +42,16 @@ Por semana (conjunto principal "Vieron precios"): 8–14/10 ARS 40.491, CTR 2,00
 | 8/10 al 15/11 | sl_simulacro / psicotecnicos | 35 | 17 | 2 | 0 |
 - El tráfico cae a 29 usuarios en la semana del 9/11 (era ~300 por semana).
 
+| Semana (personas nuevas) | Anuncio | Usuarios | Practican | Ven precios | Cuentas |
+| --- | --- | --- | --- | --- | --- |
+| 2/11 | teclado | 214 | 147 | 10 | 26 |
+| 2/11 | iq | 96 | 57 | 0 | 3 |
+| 9/11 | todos | 32 | 18 | 1 | 2 |
+| 16/11 | todos | 1 | 0 | 0 | 0 |
+- Gasto de Google: sin dato (no informado; PostHog sin fuente de Google Ads conectada, 23/11).
+
 ## Canales no pagos
 - Directo, orgánico y referidos: volumen casi nulo (~5 practicantes por semana sin UTM).
 - Instagram `link_in_bio`: 10 usuarios desde el 8/10, con 1 pago.
-- Desafíos entre amigos: 2 aceptados en 30 días (link directo, al 7/10). Batallas (desde mediados de octubre): pico de 22 creadas y 15 respondidas la semana del 12/10; 0 a 2 por semana desde el 26/10.
+- Desafíos entre amigos: 2 aceptados en 30 días (link directo, al 7/10). Batallas (desde mediados de octubre): pico de 22 creadas y 15 respondidas la semana del 12/10; 0 a 2 por semana desde el 26/10; 1 creada la semana del 2/11 y 0 en las del 9 y 16/11.
+- Total de la app, semana del 16/11: 6 personas nuevas, 8 activas, 3 practican, 0 pagos (PostHog).
