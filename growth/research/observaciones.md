@@ -79,3 +79,99 @@ Tipos: **directa** (lo vimos), **declarado** (lo dice la empresa), **estimación
 - **Medición:** el evento `payment_succeeded` y `pro_cta_clicked` no existen en el proyecto (taxonomía 2026-10-07). Las compras no se pueden ver en PostHog.
 ### Calidad del proceso
 - El buscador devolvió fechas de 2026 para notas de 2021 y 2023. Regla: fechar siempre con la página abierta.
+
+## 2026-10-12
+- **Interno (PostHog, observación directa):** semana del 5/10 con 676 visitas, 267 prácticas, 46 vieron precios, 3 clics en pagar, 1 compra (`payment_succeeded` el 2026-10-07) y 1 pago fallido. `payment_succeeded` y `pro_cta_clicked` ya existen. Por anuncio: `velocidad` 481 personas / 257 practican / 40 ven precios / 1 clic en pagar; sin utm 165 / 6 / 12 / 5. Pistas en 14 días: figuras 37, mixto 28, inglés 13, lógica 11, números 9.
+- **Meta (AR, activos, 2026-10-12, observación directa):** "test de IQ" 113 (97 el 10-07); "test psicotécnico" 2 (nuestro y Alkemy, B2B); "velocidad de escritura teclado" 0; "mecanografía" 4 (ninguno de un competidor); "test de inglés nivel" 141 (formato "test de 2 minutos").
+- **Ratatype Plus** US$49,99/año o US$9,99/mes, con ilimitado, sin anuncios y certificados (https://www.ratatype.com/ratatype-plus/, observación directa).
+- **123test:** IQ clásico gratis de 10 preguntas; profesional de 44 preguntas US$12,99; menú con "Autumn offer (70% off)" sin condiciones visibles (https://www.123test.com/iq-test/, observación directa).
+- **Mercado Libre AR:** sin fuente de 2026 sobre un test de lógica; solo testimonios y notas de 2021-2023 (búsqueda web, 2026-10-12).
+- **Repo:** los experimentos `iq-desafio-directo` y `precio-oferta-24h` se cerraron el 2026-10-11 (commit 0a10df8).
+
+
+## 2026-11-02
+
+### Interno (PostHog, proyecto 642163, solo lectura; consultado 2026-11-02)
+- PostHog · directa · usuarios únicos por semana (lun-dom): visitas 115 / 676 / 1.080 / 1.134 / 384 (semanas del 28-sep, 5-oct, 12-oct, 19-oct, 26-oct). Terminan práctica: 24 / 179 / 351 / 367 / 124. Ven precios: 14 / 46 / 72 / 20 / 7. Clic en pagar: 3 / 3 / 3 / 2 / 0. `payment_succeeded`: 0 / 1 / 1 / 0 / 0.
+- PostHog · directa · vistas de precios por usuario que termina práctica: 58% → 26% → 21% → 5% → 6%. La caída empieza la semana del 19-oct, dos semanas después de subir el plan gratis (5/10 por día).
+- PostHog · directa · últimos 14 días por anuncio (`utm_content`): `velocidad` 870 usuarios, 256 terminan práctica, 12 ven precios, 1 clic en pagar; `iq` 466 / 160 / 2 / 0; `teclado` 64 / 32 / 3 / 0; `iq-serie`, `vel-evolucion`, `sl_simulacro`: menos de 30 usuarios cada uno.
+- PostHog · directa · motivos de `pricing_viewed` (28 días): `limit` 184 vistas (95 usuarios), `upgrade` 53, `limite_cuenta` 28, `cinturon_amarillo` 28.
+- PostHog · directa · desafíos (21 días): `battle_created` 21 usuarios, `battle_shared` 18, `battle_link_opened` 24, `battle_accepted` 22. `pro_cta_clicked`: 12 eventos en 5 semanas (5/3/3/1 usuarios por semana).
+- Cierra la alerta de medición del 2026-10-07: `payment_succeeded` y `pro_cta_clicked` ya existen.
+- Acceso: la primera consulta cayó en el proyecto 683617 (otro producto); se cambió al 642163 con switch-project. Sin escrituras.
+
+### Anuncios en Argentina (Biblioteca de anuncios de Meta, consultada 2026-11-02)
+- Meta Ad Library · directa · "IQ Mental" (página nueva) lanzó el 2026-11-02 (~04:00 UTC) al menos 12 anuncios iguales con el gancho "¿Te creés más inteligente que el argentino promedio?" y bandera de Argentina. Gancho de identidad local.
+- Meta Ad Library · directa · "test de psicotécnico" en AR: 5 resultados, ninguno de preparación (Alkymetrics/Alkemy B2B para empresas, un perfil de España, un "Test de CI"). "mecanografía velocidad de escritura": 2 anuncios de un curso de ofimática. "Pruebas de ingreso trabajo test online": 1, irrelevante.
+- Meta Ad Library · directa · "test de IQ" en AR devuelve un total estimado de 21.545 y muchos anuncios en alemán o sueco: el filtro de país incluye anunciantes extranjeros. No comparable con los 75/97 anteriores.
+
+### Precios y ofertas de proyectos en seguimiento (observación directa)
+- ratatype.com/ratatype-plus · directa · sin cambios: US$49,99/año o US$9,99/mes; ilimitado, sin anuncios, certificados. El descuento aplica solo al primer pago.
+- 123test.com/iq-test · directa · IQ clásico gratis de 10 preguntas; versión profesional de 44 preguntas, US$12,99. Menú con "Autumn offer (70% off)". No pude ver cuándo se muestra la oferta.
+- practiceaptitudetests.com/pricing · directa · gratis: una prueba de cada formato y seguimiento básico; Pro £39/año o £29/mes, renovación automática, sin reembolso una vez iniciado el acceso.
+- monkeytype.com · estimación · no encontré cifras de ingresos de 2026 confiables; las que circulan son de creadores de contenido. Queda "desconocido".
+### Calidad del proceso
+- typing.com/student/premium dio 404; keybr.com no mostró el plan en la página de inicio. Sin dato nuevo de ambos.
+- Mercado Libre y Techint (pedido BL-006): las búsquedas siguen devolviendo la nota de iProfesional de 2021 con fecha de 2026 en el buscador; ninguna fuente nueva sobre el test.
+## 2026-11-09 · Tercera ejecución
+### Interno (PostHog, proyecto 642163, solo lectura, consultado el 2026-11-09)
+- 14 días: 678 visitantes, 378 empiezan práctica, 291 terminan, 17 ven precios, 1 clic en pagar, 1 llega a Mercado Pago, 0 pagan; 43 se registran. El evento `payment_succeeded` ya existe: 2 compras en 6 semanas.
+- Vistas de precios por semana (28-sep a 09-nov): 14 / 46 / 72 / 20 / 7 / 10 con visitas 115 / 676 / 1.080 / 1.134 / 384 / 335. Inferencia nuestra: la caída coincide con los muros por cinturón (15-oct).
+- 28 días por `utm_content`: `velocidad` 1.734 personas (60 ven precios, 2 clics), `iq` 746 (9, 0), `teclado` 296 (13, 0). Batallas creadas por semana: 3, 17, 3, 2, 1, 0.
+### Externo
+- Meta AR (activos, 2026-11-09), observación directa solo de títulos: "test de IQ" 120 anuncios, la mayoría de páginas anónimas con el mismo gancho "Responde 30 preguntas y descubre tu resultado"; "¿Estás en el top 2%?" en español. "psicotécnico práctica" 0; "velocidad de escritura teclado" 0; "mecanografía" 6, ninguno competidor.
+- myiq · terceros (OCU, Portal da Queixa, 2026) · test de ≈0,50–1 € seguido de cobro de 29,99 €. Sin verificar con la empresa.
+- Certificados gratis: TypeQuicker, typingtest.me, fastfingers.net (terceros/sitios propios, sin abrir cada página). Ratatype 5 € por certificado: una nota de tercero, no verificada.
+- jobcannon.io/es · observación del buscador · test de aptitud cognitiva gratis de 32 preguntas en español (verbal incluido).
+- Monkeytype, typing.com, keybr, TypeRacer: sin cambios de precio ni producto con fuente (el buscador devolvió páginas no oficiales).
+### Calidad del proceso
+- Primer intento de PostHog cayó en otro proyecto (la sesión arrancó en el 683617); se cambió al 642163 antes de usar datos. Los números de este informe son del 642163.
+## 2026-11-16 · Tercera ejecución
+### Interno (PostHog 642163, solo lectura)
+- Visitantes por semana: 676 (5-oct), 1.080 (12-oct), 1.134 (19-oct), 384 (26-oct), 335 (2-nov), **48 (9-nov)**. Meta: 797 y 765 personas (12 y 19-oct), 146 (26-oct), 0 desde el 2-nov. Google: todo pago (1.169 personas con `gclid`/`gad_source` desde el 5-oct; orgánico 23), 38 la semana del 9-nov · directa · inferencia: campañas pausadas.
+- Muros por cinturón (desde 15-oct): 214 invitados ven el cartel por límite → 71 crean cuenta (33%). 45 ven precio → 3 clics en pagar (7%) → 0 compras · directa.
+- Por dispositivo (desde 15-oct): celular 1.813 visitantes / 829 practican / 41 registros / 23 ven precios / **0 clics**; compu 519 / 311 / 50 / 22 / **3 clics** · directa.
+- Compras: 2 `payment_succeeded` (7 y 13 de octubre). 12 `checkout_started` desde el 5-oct; los 4 desde el 24-oct sin pago · directa.
+- `iq-desafio-directo` y `precio-oferta-24h` cerrados el 2026-10-11 (README): el segundo con 0 clics en pagar en ambas variantes · directa (repo).
+- `payment_succeeded` y `pro_cta_clicked` ya existen (corrige la alerta del 2026-10-07) · directa.
+### Anuncios (Biblioteca de Meta, AR, activos)
+- "test de IQ": 114 (97 el 7-oct). Ganchos: "Responde 30 preguntas y descubre tu resultado" (páginas con nombre de persona, International Brain Test), "¿Estás en el top 2%?" (IQ Masters, pagan en TRY), "¿Cuántos de los 25 resuelves?" (IQTestPath). Todos en USD o TRY · directa (solo títulos).
+- "mecanografía" 3 (ninguno competidor), "test psicotécnico" 1 (Alkemy, B2B), "escribir más rápido teclado" 6 (ninguno de tipeo) · directa.
+### Precios y oferta
+- Ratatype Plus · directa · US$9,99/mes o US$49,99/año; campo de código promocional, "el descuento aplica solo al primer pago".
+- 123test · directa · sin cambios; "Autumn offer (70% off)" en el menú.
+- practiceaptitudetests · directa · Pro £39/año o £29/mes; sin reembolso una vez empezado el acceso.
+- ARTypist · directa · certificado verificable por código solo en el curso Pro (precio no visible, página de precios 404).
+- JobTestPrep · directa · tiene sitio en español (España y tests globales), sin Argentina.
+- IQ Masters · estimación (screensdesign, apppricinglab) · suscripción semanal con prueba de 3 días; compras integradas de US$7,99 a US$19,99.
+- Reverse trial · estimación (blogs de Amplitude, Userpilot, Inflection) · +10% a 40% de conversión frente al freemium atribuido a Elena Verna; sin estudio controlado.
+- CyberMonday 2026 fue del 2 al 4-nov; Black Friday 27-nov · prensa.
+### Empresas argentinas (BL-006)
+- YPF Jóvenes Profesionales · prensa (iProfesional, 22-ene-2026) · "pruebas de inglés y razonamiento", dinámica grupal virtual, assessment. Fuente más nueva que la de `/profesional`.
+- Mercado Libre · prensa (Cronista, 7-abr-2021) · "test psicotécnico de 40 preguntas en 20 minutos": contradice los 30 min de la otra fuente de 2021.
+- Techint · prensa (iProfesional, 23-sep-2024) · gira con inscripción hasta el 30-nov de 2024; no menciona tests.
+- Unilever · sin fuente argentina de 2026 ("Futuros Líderes" no aparece; vigente: pasantía Únicxs).
+- PepsiCo Next Gen · prensa (Mercado, 11-sep-2025) · no describe tests. No sirve para `/profesional`.
+### Calidad del proceso
+- El buscador volvió a poner "26/6/2026" a notas de 2024 (iProfesional): la regla de fechar con la página abierta sigue haciendo falta.
+- El conector de PostHog arrancó en otro proyecto de la organización: confirmar siempre `project-get` = 642163 antes de consultar.
+
+## 2026-11-23
+### Interno (PostHog 642163, solo lectura)
+- Visitantes por semana: 384 (26-oct), 335 (2-nov), 48 (9-nov), 7 (16-nov), 0 (23-nov, hasta 12 UTC) · observación directa (SQL sobre `events`). Pagos: 0 en las cinco.
+- Orgánico desde el 1-oct: ~26 personas desde buscadores (google.com 17, app de Google 6, Bing 3); 0 por `/profesional`; directo 256 · observación directa.
+- Meta: 5 campañas pausadas, gasto 0, sin actividad desde el 15-nov · dato del PR #76 (Marketing).
+### Competidores
+- Ratatype · observación directa (ratatype.com, /ratatype-plus/) · Black Friday "Tag Hunt": 12 insignias escondidas → hasta 60% off en el primer pago de Plus; pide registro. Plus sigue en US$9,99/mes o US$49,99/año.
+- 123test · observación directa · versión profesional US$12,99; "Autumn offer (70% off)"; sin Black Friday.
+### Anuncios (Meta, AR, activos)
+- "test de IQ": 95 (114 el 16-nov) · observación directa. Nuevo: Monolotus IQ (≥12 anuncios del 22-nov, "¿Por qué no intentarlo?", USD). Siguen IQ Masters, Benjamin Carter, Olivia Hayes ("¿Estás en el top 2%?", TRY), IQTestPath.
+- "mecanografía": 6, todos de "digitación desde casa" · "test psicotécnico": 3 (Alkemy, Beework) · sin competidores.
+### Orgánico (buscador de EE. UU., no Google AR)
+- "test de velocidad de escritura": sitios genéricos de herramientas (Miniwebtool, CodeItBro, Tidio, Coddy) + Ratatype, 10FastFingers, ARTypist · observación directa.
+- "simulacro test Mercado Libre", "practicar test Techint": solo Glassdoor, Scribd, Indeed, easy-quizzz (SHL genérico); ninguna página de práctica específica · observación directa.
+- "site:temploninja.com": sin resultados · inferencia débil (no es Google). El repo no tiene `sitemap.xml` ni `robots.txt` · observación directa.
+### Empresas argentinas (BL-006)
+- Mercado Libre · Glassdoor 2025-2026 (terceros) · "40 preguntas en 20 minutos" para envíos; sin prensa 2026.
+- Techint · Forbes (sin fecha) · JP cierra el 30-nov, no menciona tests · El Economista (27-ago-2025) · PEV verano 2026, no menciona tests.
+- Unilever · Mercado (11-feb-2026) · Únicxs 2026 cerró el 28-feb; no describe etapas.
