@@ -12,7 +12,7 @@ Tráfico: estimaciones de terceros (Semrush, salvo que se indique Similarweb), a
 | monkeytype.com | Directo · tipeo | 21,33M visitas/mes; 67% directo (Semrush). Ingresos por anuncios estimados US$60–130K/mes (Boring Goldmine, estimación de terceros) | Media: test de velocidad, en inglés, sin cuenta obligatoria | Líder en tráfico; modelo de anuncios + donaciones |
 | typing.com | Directo · tipeo | 15,17M visitas/mes, +30% m/m (Semrush). Premium sin anuncios: US$7,99 (promo) a US$45/año (terceros) | Media: curso completo, certificados gratis | Líder en cursos; certificado gratis |
 | keybr.com | Directo · tipeo | 3,61M visitas/mes (Semrush). Premium: pago único de US$14 para sacar anuncios (terceros) | Media | Referente de pago único de bajo precio |
-| ratatype.com | Directo · tipeo | 400K visitas/mes (Semrush). Gratis 10 ejercicios/día; Plus (ilimitado, sin anuncios, certificados) US$49,99/año o US$9,99/mes (observación directa 2026-10-07); certificado para el trabajo (observación directa del FAQ) | **Alta**: límite diario + pago para ilimitado, como TN | Modelo freemium más parecido al nuestro |
+| ratatype.com | Directo · tipeo | 400K visitas/mes (Semrush). 2026-11-23: Black Friday "Tag Hunt" (12 insignias → 60% off, con registro). Gratis 10 ejercicios/día; Plus (ilimitado, sin anuncios, certificados) US$49,99/año o US$9,99/mes (observación directa 2026-10-07; sin cambios el 2026-11-16, ahora con campo de código promocional); certificado para el trabajo (observación directa del FAQ) | **Alta**: límite diario + pago para ilimitado, como TN | Modelo freemium más parecido al nuestro |
 | typeracer.com | Directo · tipeo competitivo | 2,16M visitas/mes (Semrush) | Media: carreras y rankings | Mecánica competitiva |
 | myiq.com | Directo · IQ | 5,8M visitas en 3 meses, +64% m/m, 40% Paid Social; Italia, Brasil, Canadá, Francia, España (Similarweb) | **Alta en adquisición** (mismo gancho que nuestro anuncio iq); baja en ética del modelo | Ganador del gancho "test de IQ" en anuncios |
 | 123test.com | Directo · IQ y personalidad | 1,25M visitas/mes (Semrush). IQ gratis de 10 preguntas; versión profesional US$12,99 (observación directa) | Alta: test corto gratis → versión paga | Escalera gratis → pago transparente |
@@ -38,6 +38,12 @@ Tráfico: estimaciones de terceros (Semrush, salvo que se indique Similarweb), a
 - Alkymetrics / Alkemy (alkemy.com, B2B): pruebas de evaluación para empresas; anuncia en AR. Sirve para entender qué tests usan las empresas; no es competidor directo.
 
 - jobcannon.io/es: test de aptitud cognitiva gratis de 32 preguntas en español, con razonamiento verbal (buscador, 2026-11-09). Referencia para BL-011.
+
+- artypist.com (2026-11-16): curso de tipeo con versión en español; certificado verificable por código solo en el curso Pro (precio no visible). Referencia para OP-002.
+- jobtestprep.com/es (2026-11-16): sitio en español de JobTestPrep, centrado en España y tests globales; no menciona Argentina.
+- Anunciantes de IQ en Meta AR (2026-11-16): IQTestPath ("¿Cuántos de los 25 resuelves?"), International Brain Test y páginas con nombre de persona ("Responde 30 preguntas"). Sin sitio identificado; seguir solo como anuncios.
+- Monolotus IQ (2026-11-23): anunciante nuevo de IQ en Meta AR (≥12 anuncios, español y francés). Sin sitio identificado; seguir solo como anuncios.
+- Glassdoor / Scribd (2026-11-23): no compiten, pero ocupan los primeros resultados para "test de [empresa argentina]". Referencia para OP-007.
 
 ## Descartados
 - typelab.org: los resúmenes de búsqueda decían US$74K/mes; la fuente verificada (TrustMRR, Stripe) dice **US$10/mes**. Sin tracción.
