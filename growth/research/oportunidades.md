@@ -8,6 +8,8 @@
 | OP-004 | 2026-10-07 | "Pago único, sin suscripción" como mensaje junto a la oferta y en el anuncio iq | investigar más (OP-001 ya cerró; sin tráfico para probar) | — |
 | OP-005 | 2026-11-16 | En el celular, el cartel vende la mente (IQ ninja, simulacros) y no el teclado | **experimentar cuando vuelva el tráfico** (0 clics en pagar en 1.813 visitantes de celular) | — |
 | OP-006 | 2026-11-16 | 24 h de acceso completo al crear la cuenta (prueba invertida) | investigar más (exploratoria; no correr junto con OP-005) | — |
+| OP-007 | 2026-11-23 | Una página de práctica por empresa argentina (ML, Techint, YPF) para buscadores, con sitemap | **experimentar ahora** (única prueba sin presupuesto; exploratoria) | — |
+| OP-008 | 2026-11-23 | Descuento que se gana con cinturones (como el "Tag Hunt" de Ratatype) | investigar más (mirar si Ratatype lo repite; sin tráfico) | — |
 | — | 2026-11-16 | Descuento de Black Friday con cuenta regresiva | **archivada** (`precio-oferta-24h`: 0 clics en las dos variantes) | — |
 
-El detalle está en `informes/2026-10-05.md` (OP-001 a OP-003) `informes/2026-10-07.md` (actualizaciones y OP-004) e `informes/2026-11-16.md` (OP-005, OP-006 y la actualización de OP-002).
+El detalle está en `informes/2026-10-05.md` (OP-001 a OP-003) `informes/2026-10-07.md` (actualizaciones y OP-004) `informes/2026-11-16.md` (OP-005, OP-006 y la actualización de OP-002) e `informes/2026-11-23.md` (OP-007 y OP-008).

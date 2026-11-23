@@ -109,3 +109,23 @@ Tipos: **directa** (lo vimos), **declarado** (lo dice la empresa), **estimación
 ### Calidad del proceso
 - El buscador volvió a poner "26/6/2026" a notas de 2024 (iProfesional): la regla de fechar con la página abierta sigue haciendo falta.
 - El conector de PostHog arrancó en otro proyecto de la organización: confirmar siempre `project-get` = 642163 antes de consultar.
+
+## 2026-11-23
+### Interno (PostHog 642163, solo lectura)
+- Visitantes por semana: 384 (26-oct), 335 (2-nov), 48 (9-nov), 7 (16-nov), 0 (23-nov, hasta 12 UTC) · observación directa (SQL sobre `events`). Pagos: 0 en las cinco.
+- Orgánico desde el 1-oct: ~26 personas desde buscadores (google.com 17, app de Google 6, Bing 3); 0 por `/profesional`; directo 256 · observación directa.
+- Meta: 5 campañas pausadas, gasto 0, sin actividad desde el 15-nov · dato del PR #76 (Marketing).
+### Competidores
+- Ratatype · observación directa (ratatype.com, /ratatype-plus/) · Black Friday "Tag Hunt": 12 insignias escondidas → hasta 60% off en el primer pago de Plus; pide registro. Plus sigue en US$9,99/mes o US$49,99/año.
+- 123test · observación directa · versión profesional US$12,99; "Autumn offer (70% off)"; sin Black Friday.
+### Anuncios (Meta, AR, activos)
+- "test de IQ": 95 (114 el 16-nov) · observación directa. Nuevo: Monolotus IQ (≥12 anuncios del 22-nov, "¿Por qué no intentarlo?", USD). Siguen IQ Masters, Benjamin Carter, Olivia Hayes ("¿Estás en el top 2%?", TRY), IQTestPath.
+- "mecanografía": 6, todos de "digitación desde casa" · "test psicotécnico": 3 (Alkemy, Beework) · sin competidores.
+### Orgánico (buscador de EE. UU., no Google AR)
+- "test de velocidad de escritura": sitios genéricos de herramientas (Miniwebtool, CodeItBro, Tidio, Coddy) + Ratatype, 10FastFingers, ARTypist · observación directa.
+- "simulacro test Mercado Libre", "practicar test Techint": solo Glassdoor, Scribd, Indeed, easy-quizzz (SHL genérico); ninguna página de práctica específica · observación directa.
+- "site:temploninja.com": sin resultados · inferencia débil (no es Google). El repo no tiene `sitemap.xml` ni `robots.txt` · observación directa.
+### Empresas argentinas (BL-006)
+- Mercado Libre · Glassdoor 2025-2026 (terceros) · "40 preguntas en 20 minutos" para envíos; sin prensa 2026.
+- Techint · Forbes (sin fecha) · JP cierra el 30-nov, no menciona tests · El Economista (27-ago-2025) · PEV verano 2026, no menciona tests.
+- Unilever · Mercado (11-feb-2026) · Únicxs 2026 cerró el 28-feb; no describe etapas.
