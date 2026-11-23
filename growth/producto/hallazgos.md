@@ -19,3 +19,25 @@ UX-003 y UX-004 actualizados el 2026-10-12 (47 llegaron al límite, 15 tocaron c
 Detalle en `informes/2026-10-05.md` y `informes/2026-10-07.md` y `informes/2026-10-12.md`.
 
 Actualización 2026-11-02 (informe de producto): UX-003 con 0 toques de "crear cuenta" esta semana (3 la previa) y 13 registros; el anuncio `velocidad` dejó de traer visitas el 28/10. Las rutinas de hoy partieron de un main sin la memoria del 10-12 y repitieron IDs: sus hallazgos UX-005, UX-006 y UX-007 figuran aquí como UX-007, UX-008 y UX-009.
+| UX-002 | 2026-10-05 | En el celular (76% de las visitas) mucha gente hace lecciones de tipeo con el teclado de la pantalla; Ninja mental funciona mejor ahí | propuesto (experimentar) | — |
+| UX-003 | 2026-10-05 | Al llegar al límite diario, pocos terminan de crear la cuenta gratis (12 → 3 → 2) | **resuelto** 2026-11-16 (formulario dentro del cartel, 15/10) | 26 de 71 invitados en el límite crearon la cuenta en 14 días (2/11–16/11) |
+| UX-004 | 2026-10-07 | En el celular con `velocidad`, 28 terminan una práctica y solo 9 ven precios | propuesto (experimentar, BL-002) | Sin datos nuevos: `velocidad` trajo 2 personas en 14 días (2026-11-16) y 0 en 7 días (2026-11-23) |
+| UX-005 | 2026-11-16 | Las cuentas gratis ven el precio (cinturón amarillo o límite de 13) y nadie toca pagar: 11 → 0 en 14 días; la lista no avisa qué lecciones son pagas | nuevo (experimentar cuando vuelva el tráfico) | — |
+| UX-006 | 2026-11-16 | La portada `/` actual salta al cargar en el celular (CLS p75 0,93 contra 0,002 en `/nueva`): panel de preferencias abierto que se cierra por JS | nuevo (arreglar ya; decide el coordinador por el A/B de portada) | — |
+| UX-007 | 2026-11-16 | El formulario de cuenta del cartel no dice las reglas de usuario y contraseña: errores 400 y clics repetidos en "Seguir practicando" | propuesto (arreglo rápido, junto con UX-011) | 2026-11-23: 18 de 56 que tocaron el botón y no se registraron habían escrito algo |
+| UX-008 | 2026-11-02 | (ex UX-005 del informe del 2/11) 114 terminan una práctica y solo 6 ven precios; el muro de pago aparece al ganar el cinturón amarillo y el límite diario casi no se alcanza | fusionado con UX-005 (2026-11-23) | — |
+| UX-009 | 2026-11-02 | (ex UX-006 del informe del 2/11) `iq_exp_activated` y `$feature_flag_called` con 0 eventos: los experimentos `iq-desafio-directo` y `precio-oferta-24h` no se medían | descartado (2026-11-23): los dos experimentos se cerraron el 11/10 | — |
+| UX-010 | 2026-11-02 | (ex UX-007 del informe del 2/11) El hito de medición (`checkpoint_shown`) lo ven 192 personas y solo 24 actúan | propuesto (investigar más) | Sin datos nuevos el 2026-11-23 (9 personas lo vieron en 14 días) |
+| UX-011 | 2026-11-23 | El botón del cartel de cuenta dice "Seguir practicando": 56 de 139 invitados que lo tocaron no crearon la cuenta y 38 de ellos no habían escrito nada (16/10–23/11) | nuevo (arreglar ya) | — |
+
+UX-003 y UX-002 actualizados el 2026-10-07 (19 llegaron al límite, 4 tocaron crear cuenta, 5 se registraron). UX-001 sigue resuelto.
+
+UX-002 sin datos nuevos el 2026-11-16 (el tráfico de celular cayó con el corte de campañas).
+
+UX-005 y UX-006 sin datos nuevos el 2026-11-23 (7 visitas en la semana; UX-006 sigue sin arreglar en `index.html:33`).
+
+Nota del 2026-11-23: los informes del 2/11 y del 16/11 (ninguno mergeado) usaron los mismos IDs UX-005 a UX-007 para
+hallazgos distintos. Quedan los del 16/11 con su número y los del 2/11 como UX-008 a UX-010.
+
+Detalle en `informes/2026-10-05.md`, `informes/2026-10-07.md`, `informes/2026-11-02.md`, `informes/2026-11-09.md`,
+`informes/2026-11-16.md` e `informes/2026-11-23.md`.
