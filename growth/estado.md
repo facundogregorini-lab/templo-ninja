@@ -57,6 +57,25 @@ Cada rutina responde primero lo que le toca, en una sección "Pedidos del coordi
 - **Producto:** (1) **BL-025:** de las personas que vieron precios o el muro (por motivo) y no hicieron clic en pagar, ¿qué hicieron con el diálogo (cerrar, tiempo abierto, volver a practicar)? Datos de las 145 vistas de precios de las últimas 4 semanas y de `belt_gate_shown`. (2) ¿Cuándo exactamente cayeron las vistas de precios por día (antes y después del 14 y 15/10) y por motivo? Confirma o descarta la inferencia de arriba. (3) Verificar si BL-019, BL-018 y BL-015 están aplicados. (4) Revisar la asignación de `home-nueva`: `home_ab_exposure` contra personas por `home_ab` (la semana del 12/10 no coincidían).
 - **Marketing:** (1) **Antes de consultar PostHog, cambiar al proyecto 642163 con `switch-project`** (resuelve MK-010: la conexión empieza en otro proyecto y producto y research ya lo hicieron así). (2) ARS por práctica, por vista de precios y por clic en pagar por anuncio, con PostHog, para las semanas con gasto (5/10 al 26/10). (3) Cruzar las 2 compras que Meta atribuye a `velocidad` con los 2 pagos de PostHog (7/10 y 13/10, sin UTM). (4) `iq` por `utm_source` (Meta contra Google, MK-012/MK-009).
 - **Research:** (1) **BL-025:** cómo muestran Ratatype, Keybr y TypingClub el momento del bloqueo por límite y la primera oferta (texto, precio, qué ofrecen antes de pedir pago); sirve también para BL-026 (¿ofrecen pagar tras el primer resultado?). Solo con fuente pública enlazada y fecha. (2) BL-006 sigue en pausa: sin fuente 2026 no se agregan empresas.
+Última actualización: 2026-11-09 (coordinador).
+
+## Cuello de botella actual
+**Llegar a ver la oferta.** Semana del 2/11 (PostHog 642163, personas únicas): 335 visitantes, 213 practican, 10 ven precios, 1 clic en pagar, 0 pagos. Entre el 5/10 y el 1/11, Meta gastó ARS 127.929 y hubo 2 pagos en PostHog. Meta de Templo Ninja está apagada desde el 27/10; el tráfico con UTM viene de Google (sin gasto visible). Detalle: `coordinador/informes/2026-11-09.md`.
+
+## Experimentos en curso
+- **A/B de la portada `/` contra `/nueva`:** regla propuesta en el informe del 2026-11-09 (pendiente de Facundo).
+- Cerrados el 2026-10-11 sin ganador: `iq-desafio-directo` y `precio-oferta-24h`.
+
+## Cambios recientes a vigilar
+- Muros por cinturón (2026-10-15): la oferta aparece al ganar el cinturón amarillo; las vistas de precios cayeron de 72 a 20 por semana. Plan gratis hoy: 6 y 13 prácticas por día.
+
+## Próximo
+BL-015, BL-016, BL-017 (arreglos); BL-014 (pregunta); BL-003 (Producto). Ningún experimento nuevo hasta cerrar el A/B.
+
+## Pedidos del coordinador
+- **Producto:** `belt_gate_shown`/`belt_gate_dismissed` antes y después del 15/10 y abandono al crear cuenta (BL-003); necesita PostHog 642163.
+- **Marketing:** costo del canal Google si Facundo da el gasto.
+- **Research:** fuentes 2026 de Mercado Libre, Techint y Unilever para `/profesional`.
 
 ## Estructura de Growth
 | Rutina | Cuándo (hora de Argentina) | Entrega | Instrucciones |

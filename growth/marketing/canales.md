@@ -14,6 +14,15 @@
 | 6 al 12/10 | velocidad | 25.376 | 571 | 393 | 241 | 0 | 105 |
 | 6 al 12/10 | iq (Meta) | 3.319 | 38 | 23 | ver MK-009 | — | — |
 | 6 al 12/10 | Reels (6 anuncios) | 5.558 | ~56 | — | 8 | 0 | 695 |
+### Semanas 5/10 al 8/11 (campaña Templo Ninja; gasto Meta, practicantes PostHog por `$initial_utm_content`)
+
+| Semana | Gasto (ARS) | Clics | Practican | Ven precios | Clic en pagar | ARS por practicante |
+| --- | --- | --- | --- | --- | --- | --- |
+| 5 al 11/10 | 35.670 | 677 | 258 | 36 | 0 | 138 |
+| 12 al 18/10 | 42.744 | 1.109 | 504 | 60 | 0 | 85 |
+| 19 al 25/10 | 41.514 | 996 | 496 | 14 | 1 | 84 |
+| 26/10 al 1/11 | 8.002 | 167 | 136 | 6 | 0 | 59 |
+| 2 al 8/11 | 0 | 0 | — | — | — | — |
 
 ### Cambios
 - 2026-10-01: lanzamiento con el conjunto "Registro" (optimiza CompleteRegistration).
@@ -30,6 +39,11 @@
 - 2026-10-11: se cierran los experimentos de iq y de la oferta de 24 horas y se mergea el A/B de portada `/` contra `/nueva` (PR #53 y #54).
 - Campaña "TN | Profesional | AR | Test01": pausada, gasto 0.
 - Aparece tráfico con `utm_source=google` (`iq`, `teclado`, `psicotecnicos`): canal sin documentar (MK-009).
+- 2026-10-27 17:29: se pausa la campaña "Templo Ninja | Registro" (decidió Facundo, Power Editor). "TN | Profesional" figura pausada y sin gasto.
+- 2026-10-22 a 11-04: Facundo activa/pausa en la misma cuenta las campañas MARU (activa) y amoblaIA (pausada el 30/10); no son de Templo Ninja y no se analizan.
+
+## Google (`utm_source=google`)
+- Desde el 28/10: `teclado` 252 usuarios y `iq` 212 (referido google.com). Gasto desconocido. Ver MK-008.
 
 ## Canales no pagos
 - Directo, orgánico y referidos: volumen casi nulo.

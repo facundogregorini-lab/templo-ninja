@@ -37,6 +37,8 @@ Tráfico: estimaciones de terceros (Semrush, salvo que se indique Similarweb), a
 - IQ Mental (página de Meta, AR): lanzó el 2026-11-02 anuncios con el gancho "argentino promedio". Sitio y modelo sin identificar (observación directa, Meta Ad Library). Alta en gancho local.
 - Alkymetrics / Alkemy (alkemy.com, B2B): pruebas de evaluación para empresas; anuncia en AR. Sirve para entender qué tests usan las empresas; no es competidor directo.
 
+- jobcannon.io/es: test de aptitud cognitiva gratis de 32 preguntas en español, con razonamiento verbal (buscador, 2026-11-09). Referencia para BL-011.
+
 ## Descartados
 - typelab.org: los resúmenes de búsqueda decían US$74K/mes; la fuente verificada (TrustMRR, Stripe) dice **US$10/mes**. Sin tracción.
 - metyping.com: US$39 de ingresos totales (TrustMRR). Sin tracción.
